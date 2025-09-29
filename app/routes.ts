@@ -2,7 +2,6 @@ import { type RouteConfig, index, layout, route } from "@react-router/dev/routes
 
 export default [
   layout("./layout.tsx", [
-    index("routes/home.tsx"),
     route("/etn", "./pages/etn/main.tsx"),
     route("/etn/pnl", "./pages/etn/pnl.tsx"),
     route("/etn/realtime", "./pages/etn/realtime.tsx"),
