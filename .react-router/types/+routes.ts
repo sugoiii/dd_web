@@ -13,10 +13,34 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/etn": {
+    params: {};
+  };
   "/etn/pnl": {
     params: {};
   };
   "/etn/realtime": {
+    params: {};
+  };
+  "/etn/holdings": {
+    params: {};
+  };
+  "/research/market-overview": {
+    params: {};
+  };
+  "/research/signals": {
+    params: {};
+  };
+  "/operations/risk": {
+    params: {};
+  };
+  "/operations/blotter": {
+    params: {};
+  };
+  "/operations/team": {
+    params: {};
+  };
+  "/operations/preferences": {
     params: {};
   };
 };
@@ -24,15 +48,19 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/etn/pnl" | "/etn/realtime";
+    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/" | "/etn/pnl" | "/etn/realtime";
+    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
   };
   "routes/home.tsx": {
     id: "routes/home";
     page: "/";
+  };
+  "./pages/etn/main.tsx": {
+    id: "pages/etn/main";
+    page: "/etn";
   };
   "./pages/etn/pnl.tsx": {
     id: "pages/etn/pnl";
@@ -41,5 +69,33 @@ type RouteFiles = {
   "./pages/etn/realtime.tsx": {
     id: "pages/etn/realtime";
     page: "/etn/realtime";
+  };
+  "./pages/etn/holdings.tsx": {
+    id: "pages/etn/holdings";
+    page: "/etn/holdings";
+  };
+  "./pages/research/market-overview.tsx": {
+    id: "pages/research/market-overview";
+    page: "/research/market-overview";
+  };
+  "./pages/research/signals.tsx": {
+    id: "pages/research/signals";
+    page: "/research/signals";
+  };
+  "./pages/operations/risk.tsx": {
+    id: "pages/operations/risk";
+    page: "/operations/risk";
+  };
+  "./pages/operations/blotter.tsx": {
+    id: "pages/operations/blotter";
+    page: "/operations/blotter";
+  };
+  "./pages/operations/team.tsx": {
+    id: "pages/operations/team";
+    page: "/operations/team";
+  };
+  "./pages/operations/preferences.tsx": {
+    id: "pages/operations/preferences";
+    page: "/operations/preferences";
   };
 };
