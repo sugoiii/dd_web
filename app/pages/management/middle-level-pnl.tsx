@@ -36,6 +36,10 @@ type TeamSummaryRow = {
   ytd: number;
   planVariance: number;
   riskUsage: number;
+  monthlyLossLimit: number;
+  quarterlyLossLimit: number;
+  notionalLimit: number;
+  status: "Within limits" | "Watch" | "Restricted";
 };
 
 type FundPnlRow = {
@@ -60,6 +64,15 @@ type ConstituentRow = {
   commentary: string;
 };
 
+type TeamBasisRow = {
+  department: string;
+  team: string;
+  basis: string;
+  exposure: number;
+  pnlImpact: number;
+  commentary: string;
+};
+
 const TEAM_SUMMARY_ROWS: TeamSummaryRow[] = [
   {
     department: "Index Arbitrage",
@@ -71,6 +84,10 @@ const TEAM_SUMMARY_ROWS: TeamSummaryRow[] = [
     ytd: 42.3,
     planVariance: 0.22,
     riskUsage: 0.63,
+    monthlyLossLimit: -4.5,
+    quarterlyLossLimit: -12.5,
+    notionalLimit: 2.1,
+    status: "Within limits",
   },
   {
     department: "Index Arbitrage",
@@ -82,6 +99,10 @@ const TEAM_SUMMARY_ROWS: TeamSummaryRow[] = [
     ytd: 29.1,
     planVariance: 0.08,
     riskUsage: 0.57,
+    monthlyLossLimit: -3.8,
+    quarterlyLossLimit: -11.2,
+    notionalLimit: 1.8,
+    status: "Within limits",
   },
   {
     department: "Systematic Macro",
@@ -93,6 +114,10 @@ const TEAM_SUMMARY_ROWS: TeamSummaryRow[] = [
     ytd: 21.5,
     planVariance: -0.12,
     riskUsage: 0.48,
+    monthlyLossLimit: -5.2,
+    quarterlyLossLimit: -14.6,
+    notionalLimit: 2.8,
+    status: "Watch",
   },
   {
     department: "Systematic Macro",
@@ -104,6 +129,10 @@ const TEAM_SUMMARY_ROWS: TeamSummaryRow[] = [
     ytd: 10.4,
     planVariance: -0.21,
     riskUsage: 0.41,
+    monthlyLossLimit: -2.6,
+    quarterlyLossLimit: -7.4,
+    notionalLimit: 1.3,
+    status: "Within limits",
   },
   {
     department: "Options Structuring",
@@ -115,6 +144,10 @@ const TEAM_SUMMARY_ROWS: TeamSummaryRow[] = [
     ytd: 33.7,
     planVariance: 0.34,
     riskUsage: 0.69,
+    monthlyLossLimit: -4.1,
+    quarterlyLossLimit: -12.1,
+    notionalLimit: 2.4,
+    status: "Within limits",
   },
 ];
 
@@ -315,6 +348,79 @@ const CONSTITUENT_ROWS: ConstituentRow[] = [
   },
 ];
 
+const TEAM_BASIS_ROWS: TeamBasisRow[] = [
+  {
+    department: "Index Arbitrage",
+    team: "Index Arb — Korea",
+    basis: "KOSPI vs. Futures",
+    exposure: 1.2,
+    pnlImpact: 0.18,
+    commentary: "Tightened post expiry; hedges rolled with minimal slippage.",
+  },
+  {
+    department: "Index Arbitrage",
+    team: "Index Arb — Korea",
+    basis: "ETF vs. Basket",
+    exposure: 0.9,
+    pnlImpact: 0.11,
+    commentary: "Residual dispersion favorable to long basis positions.",
+  },
+  {
+    department: "Index Arbitrage",
+    team: "Index Arb — Japan",
+    basis: "TOPIX Cash vs. Futures",
+    exposure: 1,
+    pnlImpact: 0.14,
+    commentary: "Overnight rebalancing drove supportive flow.",
+  },
+  {
+    department: "Systematic Macro",
+    team: "Global Rates",
+    basis: "UST vs. OIS",
+    exposure: 1.6,
+    pnlImpact: 0.09,
+    commentary: "Spread narrowed alongside swap spread normalization.",
+  },
+  {
+    department: "Systematic Macro",
+    team: "Global Rates",
+    basis: "Euribor vs. Bund",
+    exposure: 1.1,
+    pnlImpact: 0.07,
+    commentary: "ECB guidance kept front-end stable; carry accrued.",
+  },
+  {
+    department: "Systematic Macro",
+    team: "FX Carry",
+    basis: "BRL NDF vs. Futures",
+    exposure: 0.7,
+    pnlImpact: -0.05,
+    commentary: "Hawkish BCB rhetoric steepened the curve; carry moderated.",
+  },
+  {
+    department: "Options Structuring",
+    team: "Delta One Solutions",
+    basis: "Basket vs. Swap",
+    exposure: 1.4,
+    pnlImpact: 0.16,
+    commentary: "Structured product delta hedges monetized implied premium.",
+  },
+  {
+    department: "Options Structuring",
+    team: "Delta One Solutions",
+    basis: "Single Stock vs. ADR",
+    exposure: 0.8,
+    pnlImpact: 0.12,
+    commentary: "Cross-listing basis converged after liquidity window.",
+  },
+];
+
+const TEAM_STATUS_STYLES: Record<TeamSummaryRow["status"], string> = {
+  "Within limits": "border-emerald-200 bg-emerald-100 text-emerald-700",
+  Watch: "border-amber-200 bg-amber-100 text-amber-700",
+  Restricted: "border-red-200 bg-red-100 text-red-700",
+};
+
 function formatMillions(value?: number) {
   if (value === undefined || Number.isNaN(value)) {
     return "-";
@@ -362,16 +468,17 @@ export default function MiddleLevelPnlPage() {
 
   const teamOptions = teamsByDepartment[selectedDepartment] ?? [];
 
-  const filteredTeams = useMemo(
-    () =>
-      TEAM_SUMMARY_ROWS.filter((row) => {
-        return (
-          row.department === selectedDepartment &&
-          (selectedTeam === ALL_TEAMS_VALUE || row.team === selectedTeam)
-        );
-      }),
-    [selectedDepartment, selectedTeam],
+  const departmentTeams = useMemo(
+    () => TEAM_SUMMARY_ROWS.filter((row) => row.department === selectedDepartment),
+    [selectedDepartment],
   );
+
+  const scopedTeams = useMemo(() => {
+    if (selectedTeam === ALL_TEAMS_VALUE) {
+      return departmentTeams;
+    }
+    return departmentTeams.filter((row) => row.team === selectedTeam);
+  }, [departmentTeams, selectedTeam]);
 
   const filteredFunds = useMemo(() => {
     return FUND_PNL_ROWS.filter((row) => {
@@ -390,6 +497,15 @@ export default function MiddleLevelPnlPage() {
       return true;
     });
   }, [selectedDepartment, selectedTeam, selectedFund]);
+
+  const selectedTeamBasisRows = useMemo(() => {
+    if (selectedTeam === ALL_TEAMS_VALUE) {
+      return [] as TeamBasisRow[];
+    }
+    return TEAM_BASIS_ROWS.filter(
+      (row) => row.department === selectedDepartment && row.team === selectedTeam,
+    );
+  }, [selectedDepartment, selectedTeam]);
 
   const defaultColDef = useMemo<ColDef>(
     () => ({
@@ -511,8 +627,43 @@ export default function MiddleLevelPnlPage() {
     [deltaClassRules],
   );
 
+  const teamBasisColumns = useMemo<ColDef<TeamBasisRow>[]>(
+    () => [
+      { field: "basis", headerName: "Basis", minWidth: 200 },
+      {
+        field: "exposure",
+        headerName: "Exposure",
+        valueFormatter: (params) => formatAum(params.value as number),
+        minWidth: 140,
+      },
+      {
+        field: "pnlImpact",
+        headerName: "Day P&L",
+        valueFormatter: (params) => formatMillions(params.value as number),
+        cellClassRules: deltaClassRules,
+        minWidth: 140,
+      },
+      {
+        field: "commentary",
+        headerName: "Commentary",
+        minWidth: 260,
+        flex: 1.4,
+        wrapText: true,
+        autoHeight: true,
+      },
+    ],
+    [deltaClassRules],
+  );
+
+  const selectedTeamDetails = useMemo(() => {
+    if (selectedTeam === ALL_TEAMS_VALUE) {
+      return null;
+    }
+    return departmentTeams.find((row) => row.team === selectedTeam) ?? null;
+  }, [departmentTeams, selectedTeam]);
+
   const totals = useMemo(() => {
-    if (filteredTeams.length === 0) {
+    if (scopedTeams.length === 0) {
       return {
         day: 0,
         mtd: 0,
@@ -523,7 +674,7 @@ export default function MiddleLevelPnlPage() {
         funds: filteredFunds.length,
       };
     }
-    const aggregates = filteredTeams.reduce(
+    const aggregates = scopedTeams.reduce(
       (acc, row) => {
         acc.day += row.dayPnl;
         acc.mtd += row.mtd;
@@ -539,11 +690,11 @@ export default function MiddleLevelPnlPage() {
       mtd: aggregates.mtd,
       ytd: aggregates.ytd,
       plan: aggregates.plan,
-      avgRisk: aggregates.risk / filteredTeams.length,
-      teams: filteredTeams.length,
+      avgRisk: aggregates.risk / scopedTeams.length,
+      teams: scopedTeams.length,
       funds: filteredFunds.length,
     };
-  }, [filteredTeams, filteredFunds.length]);
+  }, [scopedTeams, filteredFunds.length]);
 
   const tradeDateLabel = useMemo(() => format(tradeDate, "dd MMM yyyy"), [tradeDate]);
 
@@ -602,7 +753,7 @@ export default function MiddleLevelPnlPage() {
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-background">
       <div className="flex flex-1 flex-col gap-6 px-4 pb-6 pt-4 lg:px-6 xl:px-8">
-        <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(320px,1fr)] xl:items-start">
+        <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,1fr)] xl:items-start">
           <div className="flex flex-col gap-6">
             <section className="flex flex-col gap-4 rounded-lg border border-border/70 bg-background/80 p-4 shadow-sm shadow-black/5">
               <div>
@@ -711,7 +862,7 @@ export default function MiddleLevelPnlPage() {
               <div className="overflow-hidden rounded-lg border border-border/70 bg-background/80">
                 <AgGridReact<TeamSummaryRow>
                   ref={teamGridRef}
-                  rowData={filteredTeams}
+                  rowData={departmentTeams}
                   columnDefs={teamColumns}
                   defaultColDef={defaultColDef}
                   animateRows
@@ -742,21 +893,126 @@ export default function MiddleLevelPnlPage() {
             </section>
           </div>
 
-          <section className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold text-foreground">PnL constituents</h2>
-              <span className="text-xs text-muted-foreground">{filteredConstituents.length} line items</span>
-            </div>
-            <div className="overflow-hidden rounded-lg border border-border/70 bg-background/80">
-              <AgGridReact<ConstituentRow>
-                rowData={filteredConstituents}
-                columnDefs={constituentColumns}
-                defaultColDef={defaultColDef}
-                animateRows
-                domLayout="autoHeight"
-              />
-            </div>
-          </section>
+          <div className="flex flex-col gap-6">
+            <section className="flex flex-col gap-4 rounded-lg border border-border/70 bg-background/80 p-4 shadow-sm shadow-black/5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Team profile</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Loss limits, governance status, and operating context.
+                  </p>
+                </div>
+                {selectedTeamDetails ? (
+                  <span
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-xs font-semibold capitalize tracking-wide",
+                      TEAM_STATUS_STYLES[selectedTeamDetails.status],
+                    )}
+                  >
+                    {selectedTeamDetails.status}
+                  </span>
+                ) : null}
+              </div>
+              {selectedTeamDetails ? (
+                <div className="flex flex-col gap-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">Lead</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {selectedTeamDetails.manager}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">Headcount</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {selectedTeamDetails.headcount} FTE
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">Monthly loss limit</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {formatMillions(selectedTeamDetails.monthlyLossLimit)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">Quarterly loss limit</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {formatMillions(selectedTeamDetails.quarterlyLossLimit)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">Notional limit</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {formatAum(selectedTeamDetails.notionalLimit)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border/70 bg-background/60 p-3">
+                    <p className="text-xs font-medium uppercase text-muted-foreground">
+                      Current risk utilisation
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {formatPercent(selectedTeamDetails.riskUsage)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Select a team from the summary grid to surface mandate limits and governance details.
+                </p>
+              )}
+            </section>
+
+            <section className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold text-foreground">Basis information</h2>
+                {selectedTeamDetails ? (
+                  <span className="text-xs text-muted-foreground">
+                    {selectedTeamBasisRows.length} basis items
+                  </span>
+                ) : null}
+              </div>
+              {selectedTeamDetails ? (
+                selectedTeamBasisRows.length > 0 ? (
+                  <div className="overflow-hidden rounded-lg border border-border/70 bg-background/80">
+                    <AgGridReact<TeamBasisRow>
+                      rowData={selectedTeamBasisRows}
+                      columnDefs={teamBasisColumns}
+                      defaultColDef={defaultColDef}
+                      animateRows
+                      domLayout="autoHeight"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-border/70 bg-background/80 p-6 text-sm text-muted-foreground">
+                    No basis exposures recorded for this team.
+                  </div>
+                )
+              ) : (
+                <div className="rounded-lg border border-dashed border-border/70 bg-background/60 p-6 text-sm text-muted-foreground">
+                  Choose a team to review detailed basis exposures.
+                </div>
+              )}
+            </section>
+
+            <section className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold text-foreground">PnL constituents</h2>
+                <span className="text-xs text-muted-foreground">{filteredConstituents.length} line items</span>
+              </div>
+              <div className="overflow-hidden rounded-lg border border-border/70 bg-background/80">
+                <AgGridReact<ConstituentRow>
+                  rowData={filteredConstituents}
+                  columnDefs={constituentColumns}
+                  defaultColDef={defaultColDef}
+                  animateRows
+                  domLayout="autoHeight"
+                />
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </main>
