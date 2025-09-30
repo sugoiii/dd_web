@@ -21,5 +21,8 @@ export default [
     route("/operations/blotter", "./pages/operations/blotter.tsx"),
     route("/operations/team", "./pages/operations/team.tsx"),
     route("/operations/preferences", "./pages/operations/preferences.tsx"),
+    route("/options/realtime", "./pages/options/realtime.tsx"),
+    route("/options/risk-dashboard", "./pages/options/risk-dashboard.tsx"),
+    route("/options/strategy-lab", "./pages/options/strategy-lab.tsx"),
   ]),
 ] satisfies RouteConfig;

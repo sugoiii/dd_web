@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   BarChart3,
+  CandlestickChart,
   Boxes,
   Briefcase,
   FileText,
@@ -160,6 +161,35 @@ export const navigationItems: NavItem[] = [
         path: "/operations/preferences",
         icon: SlidersHorizontal,
         description: "Workspace customization and notification rules.",
+      },
+    ],
+  },
+  {
+    title: "Options Trading",
+    key: "options-trading",
+    icon: CandlestickChart,
+    description: "Integrated visibility into option risk, surfaces, and execution.",
+    children: [
+      {
+        title: "Live Monitor",
+        key: "options-trading-live-monitor",
+        path: "/options/realtime",
+        icon: Activity,
+        description: "One-view dashboard for Greeks, flows, and hedges.",
+      },
+      {
+        title: "Risk Dashboard",
+        key: "options-trading-risk-dashboard",
+        path: "/options/risk-dashboard",
+        icon: ShieldCheck,
+        description: "Limit usage, stress paths, and mitigation workflow.",
+      },
+      {
+        title: "Strategy Lab",
+        key: "options-trading-strategy-lab",
+        path: "/options/strategy-lab",
+        icon: Workflow,
+        description: "Scenario testing and structuring workspace for the desk.",
       },
     ],
   },
