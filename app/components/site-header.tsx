@@ -106,7 +106,7 @@ function buildBreadcrumbs(pathname: string): BreadcrumbEntry[] {
   if (!segments.length) {
     return [
       {
-        title: "Dashboard",
+        title: "Desk Dashboard",
         path: "/",
       },
     ];

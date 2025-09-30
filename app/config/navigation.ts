@@ -26,11 +26,11 @@ export type NavItem = {
 
 export const navigationItems: NavItem[] = [
   {
-    title: "Dashboard",
+    title: "Desk Dashboard",
     key: "dashboard",
     path: "/",
     icon: LayoutDashboard,
-    description: "High-level snapshot of the trading desk.",
+    description: "Unified landing page for desk metrics and updates.",
   },
   {
     title: "Management",
