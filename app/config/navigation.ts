@@ -57,6 +57,12 @@ export const navigationItems: NavItem[] = [
         description: "Non-trade cost approvals and exception handling.",
       },
       {
+        title: "Middle-Level P&L",
+        key: "management-middle-level-pnl",
+        path: "/management/middle-level-pnl",
+        description: "Team roll-up with fund drilldowns and constituent drivers.",
+      },
+      {
         title: "Reconciliation Workbench",
         key: "management-reconciliation-workbench",
         path: "/management/reconciliation-workbench",
