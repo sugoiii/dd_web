@@ -33,10 +33,28 @@ type SidebarContextProps = {
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
+const noop = () => {};
+const noopSetter = (_open: boolean) => {};
+
+const FALLBACK_SIDEBAR_CONTEXT: SidebarContextProps = {
+  state: "expanded",
+  open: true,
+  setOpen: noopSetter,
+  openMobile: false,
+  setOpenMobile: noopSetter,
+  isMobile: false,
+  toggleSidebar: noop,
+};
+
 function useSidebar() {
   const context = React.useContext(SidebarContext);
   if (!context) {
-    throw new Error("useSidebar must be used within a SidebarProvider.");
+    if (import.meta.env.DEV) {
+      console.warn(
+        "useSidebar was called outside of a <SidebarProvider>. Rendering will continue with a no-op context.",
+      );
+    }
+    return FALLBACK_SIDEBAR_CONTEXT;
   }
 
   return context;
