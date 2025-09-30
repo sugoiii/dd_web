@@ -22,6 +22,9 @@ type Pages = {
   "/management/fees-adjustments": {
     params: {};
   };
+  "/management/middle-level-pnl": {
+    params: {};
+  };
   "/management/reconciliation-workbench": {
     params: {};
   };
@@ -75,11 +78,11 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor";
   };
   "./pages/main.tsx": {
     id: "pages/main";
@@ -96,6 +99,10 @@ type RouteFiles = {
   "./pages/management/fees-adjustments.tsx": {
     id: "pages/management/fees-adjustments";
     page: "/management/fees-adjustments";
+  };
+  "./pages/management/middle-level-pnl.tsx": {
+    id: "pages/management/middle-level-pnl";
+    page: "/management/middle-level-pnl";
   };
   "./pages/management/reconciliation-workbench.tsx": {
     id: "pages/management/reconciliation-workbench";
