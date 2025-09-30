@@ -484,10 +484,9 @@ export default function MiddleLevelPnlPage() {
     return FUND_PNL_ROWS.filter((row) => {
       if (row.department !== selectedDepartment) return false;
       if (selectedTeam !== ALL_TEAMS_VALUE && row.team !== selectedTeam) return false;
-      if (selectedFund !== ALL_FUNDS_VALUE && row.fund !== selectedFund) return false;
       return true;
     });
-  }, [selectedDepartment, selectedTeam, selectedFund]);
+  }, [selectedDepartment, selectedTeam]);
 
   const filteredConstituents = useMemo(() => {
     return CONSTITUENT_ROWS.filter((row) => {
@@ -753,105 +752,175 @@ export default function MiddleLevelPnlPage() {
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-background">
       <div className="flex flex-1 flex-col gap-6 px-4 pb-6 pt-4 lg:px-6 xl:px-8">
-        <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,1fr)] xl:items-start">
+        <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,4fr)_minmax(0,6fr)] xl:items-start">
           <div className="flex flex-col gap-6">
-            <section className="flex flex-col gap-4 rounded-lg border border-border/70 bg-background/80 p-4 shadow-sm shadow-black/5">
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground">Middle-Level P&L</h1>
-                <p className="text-sm text-muted-foreground">
-                  Daily oversight of team performance, fund attribution, and component drivers.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium uppercase text-muted-foreground">Trade date</span>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
+            <section className="flex flex-col gap-6 rounded-lg border border-border/70 bg-background/80 p-4 shadow-sm shadow-black/5">
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] xl:items-start">
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">Middle-Level P&L</h1>
+                    <p className="text-sm text-muted-foreground">
+                      Daily oversight of team performance, fund attribution, and component drivers.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-end gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium uppercase text-muted-foreground">Trade date</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "flex h-9 w-[180px] items-center justify-start gap-2 text-left font-medium",
+                              "hover:bg-muted/60",
+                            )}
+                          >
+                            <CalendarDays className="size-4" aria-hidden />
+                            {tradeDateLabel}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={tradeDate}
+                            onSelect={(nextDate) => nextDate && setTradeDate(startOfDay(nextDate))}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium uppercase text-muted-foreground">Department</span>
+                      <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                        <SelectTrigger className="min-w-[200px]">
+                          <SelectValue placeholder="Select department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departmentOptions.map((department) => (
+                            <SelectItem key={department} value={department}>
+                              {department}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium uppercase text-muted-foreground">Team</span>
+                      <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                        <SelectTrigger className="min-w-[200px]">
+                          <SelectValue placeholder="Select team" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={ALL_TEAMS_VALUE}>All teams</SelectItem>
+                          {teamOptions.map((team) => (
+                            <SelectItem key={team} value={team}>
+                              {team}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/70 bg-muted/30 p-3 text-sm text-muted-foreground">
+                    <span>
+                      Viewing {tradeDateLabel} • {selectedDepartment} •{" "}
+                      {selectedTeam === ALL_TEAMS_VALUE ? "All teams" : selectedTeam}
+                    </span>
+                    <span>
+                      Fund scope: {selectedFund === ALL_FUNDS_VALUE ? "All funds" : selectedFund}
+                    </span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">Day P&L</p>
+                      <p className="mt-1 text-lg font-semibold">{formatMillions(totals.day)}</p>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">MTD</p>
+                      <p className="mt-1 text-lg font-semibold">{formatMillions(totals.mtd)}</p>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">Average risk usage</p>
+                      <p className="mt-1 text-lg font-semibold">{formatPercent(totals.avgRisk)}</p>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">Scope</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {totals.teams} teams • {totals.funds} funds
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background/60 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h2 className="text-lg font-semibold text-foreground">Team profile</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Loss limits, governance status, and operating context.
+                      </p>
+                    </div>
+                    {selectedTeamDetails ? (
+                      <span
                         className={cn(
-                          "flex h-9 w-[180px] items-center justify-start gap-2 text-left font-medium",
-                          "hover:bg-muted/60",
+                          "rounded-full border px-3 py-1 text-xs font-semibold capitalize tracking-wide",
+                          TEAM_STATUS_STYLES[selectedTeamDetails.status],
                         )}
                       >
-                        <CalendarDays className="size-4" aria-hidden />
-                        {tradeDateLabel}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={tradeDate}
-                        onSelect={(nextDate) => nextDate && setTradeDate(startOfDay(nextDate))}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium uppercase text-muted-foreground">Department</span>
-                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                    <SelectTrigger className="min-w-[200px]">
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departmentOptions.map((department) => (
-                        <SelectItem key={department} value={department}>
-                          {department}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium uppercase text-muted-foreground">Team</span>
-                  <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                    <SelectTrigger className="min-w-[200px]">
-                      <SelectValue placeholder="Select team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={ALL_TEAMS_VALUE}>All teams</SelectItem>
-                      {teamOptions.map((team) => (
-                        <SelectItem key={team} value={team}>
-                          {team}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/70 bg-muted/30 p-3 text-sm text-muted-foreground">
-                <span>
-                  Viewing {tradeDateLabel} • {selectedDepartment} •
-                  {" "}
-                  {selectedTeam === ALL_TEAMS_VALUE ? "All teams" : selectedTeam}
-                </span>
-                <span>
-                  Fund scope: {selectedFund === ALL_FUNDS_VALUE ? "All funds" : selectedFund}
-                </span>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Day P&L</p>
-                  <p className="mt-1 text-lg font-semibold">{formatMillions(totals.day)}</p>
-                </div>
-                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">MTD</p>
-                  <p className="mt-1 text-lg font-semibold">{formatMillions(totals.mtd)}</p>
-                </div>
-                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Average risk usage</p>
-                  <p className="mt-1 text-lg font-semibold">{formatPercent(totals.avgRisk)}</p>
-                </div>
-                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Scope</p>
-                  <p className="mt-1 text-lg font-semibold">
-                    {totals.teams} teams • {totals.funds} funds
-                  </p>
+                        {selectedTeamDetails.status}
+                      </span>
+                    ) : null}
+                  </div>
+                  {selectedTeamDetails ? (
+                    <div className="mt-4 flex flex-col gap-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Lead</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">
+                            {selectedTeamDetails.manager}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Headcount</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">
+                            {selectedTeamDetails.headcount} FTE
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Monthly loss limit</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">
+                            {formatMillions(selectedTeamDetails.monthlyLossLimit)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Quarterly loss limit</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">
+                            {formatMillions(selectedTeamDetails.quarterlyLossLimit)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Notional limit</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">
+                            {formatAum(selectedTeamDetails.notionalLimit)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                        <p className="text-xs font-medium uppercase text-muted-foreground">Current risk utilisation</p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {formatPercent(selectedTeamDetails.riskUsage)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      Select a team from the summary grid to surface mandate limits and governance details.
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
-
             <section className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold text-foreground">Team summary</h2>
@@ -894,77 +963,6 @@ export default function MiddleLevelPnlPage() {
           </div>
 
           <div className="flex flex-col gap-6">
-            <section className="flex flex-col gap-4 rounded-lg border border-border/70 bg-background/80 p-4 shadow-sm shadow-black/5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">Team profile</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Loss limits, governance status, and operating context.
-                  </p>
-                </div>
-                {selectedTeamDetails ? (
-                  <span
-                    className={cn(
-                      "rounded-full border px-3 py-1 text-xs font-semibold capitalize tracking-wide",
-                      TEAM_STATUS_STYLES[selectedTeamDetails.status],
-                    )}
-                  >
-                    {selectedTeamDetails.status}
-                  </span>
-                ) : null}
-              </div>
-              {selectedTeamDetails ? (
-                <div className="flex flex-col gap-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Lead</p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {selectedTeamDetails.manager}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Headcount</p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {selectedTeamDetails.headcount} FTE
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Monthly loss limit</p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {formatMillions(selectedTeamDetails.monthlyLossLimit)}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Quarterly loss limit</p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {formatMillions(selectedTeamDetails.quarterlyLossLimit)}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-border/70 bg-background/60 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Notional limit</p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {formatAum(selectedTeamDetails.notionalLimit)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border/70 bg-background/60 p-3">
-                    <p className="text-xs font-medium uppercase text-muted-foreground">
-                      Current risk utilisation
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">
-                      {formatPercent(selectedTeamDetails.riskUsage)}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Select a team from the summary grid to surface mandate limits and governance details.
-                </p>
-              )}
-            </section>
-
             <section className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold text-foreground">Basis information</h2>
