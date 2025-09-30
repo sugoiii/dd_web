@@ -567,9 +567,9 @@ export default function MiddleLevelPnlPage() {
 
   useEffect(() => {
     if (selectedTeam === ALL_TEAMS_VALUE) {
-      teamGridRef.current?.api.deselectAll();
+      teamGridRef.current?.api?.deselectAll();
     } else {
-      teamGridRef.current?.api.forEachNode((node) => {
+      teamGridRef.current?.api?.forEachNode((node) => {
         node.setSelected(node.data?.team === selectedTeam);
       });
     }
@@ -577,9 +577,9 @@ export default function MiddleLevelPnlPage() {
 
   useEffect(() => {
     if (selectedFund === ALL_FUNDS_VALUE) {
-      fundGridRef.current?.api.deselectAll();
+      fundGridRef.current?.api?.deselectAll();
     } else {
-      fundGridRef.current?.api.forEachNode((node) => {
+      fundGridRef.current?.api?.forEachNode((node) => {
         node.setSelected(node.data?.fund === selectedFund);
       });
     }
