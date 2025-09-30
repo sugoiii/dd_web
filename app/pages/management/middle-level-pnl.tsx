@@ -339,7 +339,6 @@ function formatAum(value?: number) {
 
 export default function MiddleLevelPnlPage() {
   const [tradeDate, setTradeDate] = useState(() => startOfDay(new Date()));
-
   const teamGridRef = useRef<AgGridReact<TeamSummaryRow>>(null);
   const fundGridRef = useRef<AgGridReact<FundPnlRow>>(null);
 
