@@ -25,6 +25,21 @@ type Pages = {
   "/etn/holdings": {
     params: {};
   };
+  "/management": {
+    params: {};
+  };
+  "/management/cash-control": {
+    params: {};
+  };
+  "/management/fees-adjustments": {
+    params: {};
+  };
+  "/management/reconciliation-workbench": {
+    params: {};
+  };
+  "/management/valuation-oversight": {
+    params: {};
+  };
   "/research/market-overview": {
     params: {};
   };
@@ -48,15 +63,11 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
+    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
-  };
-  "routes/home.tsx": {
-    id: "routes/home";
-    page: "/";
+    page: "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
   };
   "./pages/etn/main.tsx": {
     id: "pages/etn/main";
@@ -73,6 +84,26 @@ type RouteFiles = {
   "./pages/etn/holdings.tsx": {
     id: "pages/etn/holdings";
     page: "/etn/holdings";
+  };
+  "./pages/management/overview.tsx": {
+    id: "pages/management/overview";
+    page: "/management";
+  };
+  "./pages/management/cash-control.tsx": {
+    id: "pages/management/cash-control";
+    page: "/management/cash-control";
+  };
+  "./pages/management/fees-adjustments.tsx": {
+    id: "pages/management/fees-adjustments";
+    page: "/management/fees-adjustments";
+  };
+  "./pages/management/reconciliation-workbench.tsx": {
+    id: "pages/management/reconciliation-workbench";
+    page: "/management/reconciliation-workbench";
+  };
+  "./pages/management/valuation-oversight.tsx": {
+    id: "pages/management/valuation-oversight";
+    page: "/management/valuation-oversight";
   };
   "./pages/research/market-overview.tsx": {
     id: "pages/research/market-overview";
