@@ -17,6 +17,7 @@ export default [
     route("/research/market-overview", "./pages/research/market-overview.tsx"),
     route("/research/signals", "./pages/research/signals.tsx"),
     route("/operations/risk", "./pages/operations/risk.tsx"),
+    route("/market-making/monitor", "./pages/market-making/monitor.tsx"),
     route("/operations/blotter", "./pages/operations/blotter.tsx"),
     route("/operations/team", "./pages/operations/team.tsx"),
     route("/operations/preferences", "./pages/operations/preferences.tsx"),

@@ -49,6 +49,9 @@ type Pages = {
   "/operations/risk": {
     params: {};
   };
+  "/market-making/monitor": {
+    params: {};
+  };
   "/operations/blotter": {
     params: {};
   };
@@ -63,11 +66,11 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
+    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/market-making/monitor" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
+    page: "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/market-making/monitor" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
   };
   "./pages/etn/main.tsx": {
     id: "pages/etn/main";
@@ -116,6 +119,10 @@ type RouteFiles = {
   "./pages/operations/risk.tsx": {
     id: "pages/operations/risk";
     page: "/operations/risk";
+  };
+  "./pages/market-making/monitor.tsx": {
+    id: "pages/market-making/monitor";
+    page: "/market-making/monitor";
   };
   "./pages/operations/blotter.tsx": {
     id: "pages/operations/blotter";

@@ -124,4 +124,19 @@ export const navigationItems: NavItem[] = [
       },
     ],
   },
+  {
+    title: "Market Making",
+    key: "market-making",
+    icon: Activity,
+    description: "Realtime quoting, hedging, and anomaly intelligence.",
+    children: [
+      {
+        title: "Command Center",
+        key: "market-making-monitor",
+        path: "/market-making/monitor",
+        icon: Activity,
+        description: "Realtime monitor for quotes, hedges, and execution flows.",
+      },
+    ],
+  },
 ];
