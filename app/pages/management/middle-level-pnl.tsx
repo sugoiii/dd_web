@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format, startOfDay } from "date-fns";
-import type { ColDef } from "ag-grid-enterprise";
+import type { ColDef, RowClickedEvent } from "ag-grid-community";
 import { ModuleRegistry, AllEnterpriseModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import { CalendarDays } from "lucide-react";
@@ -24,6 +24,7 @@ import { cn } from "~/lib/utils";
 ModuleRegistry.registerModules([AllEnterpriseModule]);
 
 const ALL_TEAMS_VALUE = "ALL";
+const ALL_FUNDS_VALUE = "ALL_FUNDS";
 
 type TeamSummaryRow = {
   department: string;
@@ -338,6 +339,8 @@ function formatAum(value?: number) {
 
 export default function MiddleLevelPnlPage() {
   const [tradeDate, setTradeDate] = useState(() => startOfDay(new Date()));
+  const teamGridRef = useRef<AgGridReact<TeamSummaryRow>>(null);
+  const fundGridRef = useRef<AgGridReact<FundPnlRow>>(null);
 
   const { departmentOptions, teamsByDepartment } = useMemo(() => {
     const departments = Array.from(new Set(TEAM_SUMMARY_ROWS.map((row) => row.department)));
@@ -350,9 +353,11 @@ export default function MiddleLevelPnlPage() {
 
   const [selectedDepartment, setSelectedDepartment] = useState(() => departmentOptions[0]);
   const [selectedTeam, setSelectedTeam] = useState<string>(ALL_TEAMS_VALUE);
+  const [selectedFund, setSelectedFund] = useState<string>(ALL_FUNDS_VALUE);
 
   useEffect(() => {
     setSelectedTeam(ALL_TEAMS_VALUE);
+    setSelectedFund(ALL_FUNDS_VALUE);
   }, [selectedDepartment]);
 
   const teamOptions = teamsByDepartment[selectedDepartment] ?? [];
@@ -368,25 +373,23 @@ export default function MiddleLevelPnlPage() {
     [selectedDepartment, selectedTeam],
   );
 
-  const filteredFunds = useMemo(
-    () =>
-      FUND_PNL_ROWS.filter((row) => {
-        if (row.department !== selectedDepartment) return false;
-        if (selectedTeam === ALL_TEAMS_VALUE) return true;
-        return row.team === selectedTeam;
-      }),
-    [selectedDepartment, selectedTeam],
-  );
+  const filteredFunds = useMemo(() => {
+    return FUND_PNL_ROWS.filter((row) => {
+      if (row.department !== selectedDepartment) return false;
+      if (selectedTeam !== ALL_TEAMS_VALUE && row.team !== selectedTeam) return false;
+      if (selectedFund !== ALL_FUNDS_VALUE && row.fund !== selectedFund) return false;
+      return true;
+    });
+  }, [selectedDepartment, selectedTeam, selectedFund]);
 
-  const filteredConstituents = useMemo(
-    () =>
-      CONSTITUENT_ROWS.filter((row) => {
-        if (row.department !== selectedDepartment) return false;
-        if (selectedTeam === ALL_TEAMS_VALUE) return true;
-        return row.team === selectedTeam;
-      }),
-    [selectedDepartment, selectedTeam],
-  );
+  const filteredConstituents = useMemo(() => {
+    return CONSTITUENT_ROWS.filter((row) => {
+      if (row.department !== selectedDepartment) return false;
+      if (selectedTeam !== ALL_TEAMS_VALUE && row.team !== selectedTeam) return false;
+      if (selectedFund !== ALL_FUNDS_VALUE && row.fund !== selectedFund) return false;
+      return true;
+    });
+  }, [selectedDepartment, selectedTeam, selectedFund]);
 
   const defaultColDef = useMemo<ColDef>(
     () => ({
@@ -544,137 +547,207 @@ export default function MiddleLevelPnlPage() {
 
   const tradeDateLabel = useMemo(() => format(tradeDate, "dd MMM yyyy"), [tradeDate]);
 
+  const handleTeamRowClicked = useCallback(
+    (event: RowClickedEvent<TeamSummaryRow>) => {
+      const team = event.data?.team;
+      if (!team) return;
+      setSelectedTeam((current) => (current === team ? ALL_TEAMS_VALUE : team));
+    },
+    [],
+  );
+
+  const handleFundRowClicked = useCallback(
+    (event: RowClickedEvent<FundPnlRow>) => {
+      const fund = event.data?.fund;
+      if (!fund) return;
+      setSelectedFund((current) => (current === fund ? ALL_FUNDS_VALUE : fund));
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (selectedTeam === ALL_TEAMS_VALUE) {
+      teamGridRef.current?.api.deselectAll();
+    } else {
+      teamGridRef.current?.api.forEachNode((node) => {
+        node.setSelected(node.data?.team === selectedTeam);
+      });
+    }
+  }, [selectedTeam]);
+
+  useEffect(() => {
+    if (selectedFund === ALL_FUNDS_VALUE) {
+      fundGridRef.current?.api.deselectAll();
+    } else {
+      fundGridRef.current?.api.forEachNode((node) => {
+        node.setSelected(node.data?.fund === selectedFund);
+      });
+    }
+  }, [selectedFund]);
+
+  useEffect(() => {
+    setSelectedFund(ALL_FUNDS_VALUE);
+  }, [selectedTeam]);
+
+  useEffect(() => {
+    if (selectedFund === ALL_FUNDS_VALUE) {
+      return;
+    }
+    const fundStillVisible = filteredFunds.some((row) => row.fund === selectedFund);
+    if (!fundStillVisible) {
+      setSelectedFund(ALL_FUNDS_VALUE);
+    }
+  }, [filteredFunds, selectedFund]);
+
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-background">
-      <div className="flex flex-1 flex-col gap-6 px-4 pb-8 pt-6 lg:px-6 xl:px-8">
-        <header className="flex flex-col gap-4 border-b border-border/70 pb-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Middle-Level P&L</h1>
-            <p className="text-sm text-muted-foreground">
-              Daily oversight of team performance, fund attribution, and component drivers.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase text-muted-foreground">Trade date</span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "flex h-9 w-[180px] items-center justify-start gap-2 text-left font-medium",
-                      "hover:bg-muted/60",
-                    )}
-                  >
-                    <CalendarDays className="size-4" aria-hidden />
-                    {tradeDateLabel}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={tradeDate}
-                    onSelect={(nextDate) => nextDate && setTradeDate(startOfDay(nextDate))}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase text-muted-foreground">Department</span>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="min-w-[200px]">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departmentOptions.map((department) => (
-                    <SelectItem key={department} value={department}>
-                      {department}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase text-muted-foreground">Team</span>
-              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                <SelectTrigger className="min-w-[200px]">
-                  <SelectValue placeholder="Select team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_TEAMS_VALUE}>All teams</SelectItem>
-                  {teamOptions.map((team) => (
-                    <SelectItem key={team} value={team}>
-                      {team}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-lg border border-border/80 bg-background/80 p-3">
-              <p className="text-xs font-medium uppercase text-muted-foreground">Day P&L</p>
-              <p className="mt-1 text-lg font-semibold">{formatMillions(totals.day)}</p>
-            </div>
-            <div className="rounded-lg border border-border/80 bg-background/80 p-3">
-              <p className="text-xs font-medium uppercase text-muted-foreground">MTD</p>
-              <p className="mt-1 text-lg font-semibold">{formatMillions(totals.mtd)}</p>
-            </div>
-            <div className="rounded-lg border border-border/80 bg-background/80 p-3">
-              <p className="text-xs font-medium uppercase text-muted-foreground">Average risk usage</p>
-              <p className="mt-1 text-lg font-semibold">{formatPercent(totals.avgRisk)}</p>
-            </div>
-            <div className="rounded-lg border border-border/80 bg-background/80 p-3">
-              <p className="text-xs font-medium uppercase text-muted-foreground">Scope</p>
-              <p className="mt-1 text-lg font-semibold">
-                {totals.teams} teams • {totals.funds} funds
-              </p>
-            </div>
-          </div>
-        </header>
+      <div className="flex flex-1 flex-col gap-6 px-4 pb-6 pt-4 lg:px-6 xl:px-8">
+        <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(320px,1fr)] xl:items-start">
+          <div className="flex flex-col gap-6">
+            <section className="flex flex-col gap-4 rounded-lg border border-border/70 bg-background/80 p-4 shadow-sm shadow-black/5">
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">Middle-Level P&L</h1>
+                <p className="text-sm text-muted-foreground">
+                  Daily oversight of team performance, fund attribution, and component drivers.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase text-muted-foreground">Trade date</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "flex h-9 w-[180px] items-center justify-start gap-2 text-left font-medium",
+                          "hover:bg-muted/60",
+                        )}
+                      >
+                        <CalendarDays className="size-4" aria-hidden />
+                        {tradeDateLabel}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={tradeDate}
+                        onSelect={(nextDate) => nextDate && setTradeDate(startOfDay(nextDate))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase text-muted-foreground">Department</span>
+                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                    <SelectTrigger className="min-w-[200px]">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departmentOptions.map((department) => (
+                        <SelectItem key={department} value={department}>
+                          {department}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase text-muted-foreground">Team</span>
+                  <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                    <SelectTrigger className="min-w-[200px]">
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_TEAMS_VALUE}>All teams</SelectItem>
+                      {teamOptions.map((team) => (
+                        <SelectItem key={team} value={team}>
+                          {team}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/70 bg-muted/30 p-3 text-sm text-muted-foreground">
+                <span>
+                  Viewing {tradeDateLabel} • {selectedDepartment} •
+                  {" "}
+                  {selectedTeam === ALL_TEAMS_VALUE ? "All teams" : selectedTeam}
+                </span>
+                <span>
+                  Fund scope: {selectedFund === ALL_FUNDS_VALUE ? "All funds" : selectedFund}
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Day P&L</p>
+                  <p className="mt-1 text-lg font-semibold">{formatMillions(totals.day)}</p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">MTD</p>
+                  <p className="mt-1 text-lg font-semibold">{formatMillions(totals.mtd)}</p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Average risk usage</p>
+                  <p className="mt-1 text-lg font-semibold">{formatPercent(totals.avgRisk)}</p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Scope</p>
+                  <p className="mt-1 text-lg font-semibold">
+                    {totals.teams} teams • {totals.funds} funds
+                  </p>
+                </div>
+              </div>
+            </section>
 
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-foreground">Team summary</h2>
-            <span className="text-xs text-muted-foreground">
-              Showing {selectedTeam === ALL_TEAMS_VALUE ? "all teams" : selectedTeam}
-            </span>
-          </div>
-          <div className="overflow-hidden rounded-lg border border-border/80 bg-background/80">
-            <AgGridReact<TeamSummaryRow>
-              rowData={filteredTeams}
-              columnDefs={teamColumns}
-              defaultColDef={defaultColDef}
-              animateRows
-              domLayout="autoHeight"
-            />
-          </div>
-        </section>
+            <section className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold text-foreground">Team summary</h2>
+                <span className="text-xs text-muted-foreground">
+                  Showing {selectedTeam === ALL_TEAMS_VALUE ? "all teams" : selectedTeam}
+                </span>
+              </div>
+              <div className="overflow-hidden rounded-lg border border-border/70 bg-background/80">
+                <AgGridReact<TeamSummaryRow>
+                  ref={teamGridRef}
+                  rowData={filteredTeams}
+                  columnDefs={teamColumns}
+                  defaultColDef={defaultColDef}
+                  animateRows
+                  domLayout="autoHeight"
+                  rowSelection="single"
+                  onRowClicked={handleTeamRowClicked}
+                />
+              </div>
+            </section>
 
-        <section className="grid gap-6 xl:grid-cols-[1.4fr,1fr] xl:items-start">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Fund attribution</h2>
-              <span className="text-xs text-muted-foreground">{filteredFunds.length} funds in view</span>
-            </div>
-            <div className="overflow-hidden rounded-lg border border-border/80 bg-background/80">
-              <AgGridReact<FundPnlRow>
-                rowData={filteredFunds}
-                columnDefs={fundColumns}
-                defaultColDef={defaultColDef}
-                animateRows
-                domLayout="autoHeight"
-              />
-            </div>
+            <section className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold text-foreground">Fund attribution</h2>
+                <span className="text-xs text-muted-foreground">{filteredFunds.length} funds in view</span>
+              </div>
+              <div className="overflow-hidden rounded-lg border border-border/70 bg-background/80">
+                <AgGridReact<FundPnlRow>
+                  ref={fundGridRef}
+                  rowData={filteredFunds}
+                  columnDefs={fundColumns}
+                  defaultColDef={defaultColDef}
+                  animateRows
+                  domLayout="autoHeight"
+                  rowSelection="single"
+                  onRowClicked={handleFundRowClicked}
+                />
+              </div>
+            </section>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <section className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold text-foreground">PnL constituents</h2>
               <span className="text-xs text-muted-foreground">{filteredConstituents.length} line items</span>
             </div>
-            <div className="overflow-hidden rounded-lg border border-border/80 bg-background/80">
+            <div className="overflow-hidden rounded-lg border border-border/70 bg-background/80">
               <AgGridReact<ConstituentRow>
                 rowData={filteredConstituents}
                 columnDefs={constituentColumns}
@@ -683,8 +756,8 @@ export default function MiddleLevelPnlPage() {
                 domLayout="autoHeight"
               />
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </main>
   );
