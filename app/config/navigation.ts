@@ -3,6 +3,7 @@ import {
   Activity,
   BarChart3,
   Boxes,
+  Briefcase,
   FileText,
   LayoutDashboard,
   LineChart,
@@ -29,6 +30,44 @@ export const navigationItems: NavItem[] = [
     path: "/",
     icon: LayoutDashboard,
     description: "High-level snapshot of the trading desk.",
+  },
+  {
+    title: "Management",
+    key: "management",
+    icon: Briefcase,
+    description: "Control oversight, reconciliation tooling, and policy reviews.",
+    children: [
+      {
+        title: "Oversight Dashboard",
+        key: "management-overview",
+        path: "/management",
+        description: "Daily certification status across reconciliation scopes.",
+      },
+      {
+        title: "Cash Control",
+        key: "management-cash-control",
+        path: "/management/cash-control",
+        description: "Book vs bank breaks, liquidity buffer, and feed health.",
+      },
+      {
+        title: "Fees & Adjustments",
+        key: "management-fees-adjustments",
+        path: "/management/fees-adjustments",
+        description: "Non-trade cost approvals and exception handling.",
+      },
+      {
+        title: "Reconciliation Workbench",
+        key: "management-reconciliation-workbench",
+        path: "/management/reconciliation-workbench",
+        description: "Break triage workspace with ownership workflow.",
+      },
+      {
+        title: "Valuation Oversight",
+        key: "management-valuation-oversight",
+        path: "/management/valuation-oversight",
+        description: "Model reserves, calibration tasks, and sign-off cadence.",
+      },
+    ],
   },
   {
     title: "ETN",
@@ -121,6 +160,47 @@ export const navigationItems: NavItem[] = [
         path: "/operations/preferences",
         icon: SlidersHorizontal,
         description: "Workspace customization and notification rules.",
+      },
+    ],
+  },
+  {
+    title: "Realtime Monitoring",
+    key: "realtime-monitoring",
+    icon: Activity,
+    description:
+      "Equity options command center to track each underlying's live state.",
+    children: [
+      {
+        title: "Underlying Pulse",
+        key: "realtime-monitoring-underlying-pulse",
+        path: "/realtime-monitoring",
+        icon: Activity,
+        description:
+          "Live quotes, Greeks, and market microstructure per core underlying.",
+      },
+      {
+        title: "Volatility Surface",
+        key: "realtime-monitoring-vol-surface",
+        path: "/realtime-monitoring/volatility-surface",
+        icon: LineChart,
+        description:
+          "Surface shifts, skew tracking, and realized vs implied dispersion.",
+      },
+      {
+        title: "Order Flow Radar",
+        key: "realtime-monitoring-order-flow",
+        path: "/realtime-monitoring/order-flow",
+        icon: Workflow,
+        description:
+          "Sweep detection, block tape, and liquidity tiers across venues.",
+      },
+      {
+        title: "Risk & Alerts",
+        key: "realtime-monitoring-risk-alerts",
+        path: "/realtime-monitoring/risk-alerts",
+        icon: ShieldCheck,
+        description:
+          "Dynamic limits, stress shocks, and escalation trails in one view.",
       },
     ],
   },
