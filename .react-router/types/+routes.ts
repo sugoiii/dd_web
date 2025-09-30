@@ -13,18 +13,6 @@ type Pages = {
   "/": {
     params: {};
   };
-  "/etn": {
-    params: {};
-  };
-  "/etn/pnl": {
-    params: {};
-  };
-  "/etn/realtime": {
-    params: {};
-  };
-  "/etn/holdings": {
-    params: {};
-  };
   "/management": {
     params: {};
   };
@@ -40,6 +28,18 @@ type Pages = {
   "/management/valuation-oversight": {
     params: {};
   };
+  "/etn": {
+    params: {};
+  };
+  "/etn/pnl": {
+    params: {};
+  };
+  "/etn/realtime": {
+    params: {};
+  };
+  "/etn/holdings": {
+    params: {};
+  };
   "/research/market-overview": {
     params: {};
   };
@@ -47,9 +47,6 @@ type Pages = {
     params: {};
   };
   "/operations/risk": {
-    params: {};
-  };
-  "/market-making/monitor": {
     params: {};
   };
   "/operations/blotter": {
@@ -70,36 +67,23 @@ type Pages = {
   "/options/strategy-lab": {
     params: {};
   };
+  "/market-making/monitor": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/market-making/monitor" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/market-making/monitor" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor";
   };
   "./pages/main.tsx": {
     id: "pages/main";
     page: "/";
-  };
-  "./pages/etn/main.tsx": {
-    id: "pages/etn/main";
-    page: "/etn";
-  };
-  "./pages/etn/pnl.tsx": {
-    id: "pages/etn/pnl";
-    page: "/etn/pnl";
-  };
-  "./pages/etn/realtime.tsx": {
-    id: "pages/etn/realtime";
-    page: "/etn/realtime";
-  };
-  "./pages/etn/holdings.tsx": {
-    id: "pages/etn/holdings";
-    page: "/etn/holdings";
   };
   "./pages/management/overview.tsx": {
     id: "pages/management/overview";
@@ -121,6 +105,22 @@ type RouteFiles = {
     id: "pages/management/valuation-oversight";
     page: "/management/valuation-oversight";
   };
+  "./pages/etn/main.tsx": {
+    id: "pages/etn/main";
+    page: "/etn";
+  };
+  "./pages/etn/pnl.tsx": {
+    id: "pages/etn/pnl";
+    page: "/etn/pnl";
+  };
+  "./pages/etn/realtime.tsx": {
+    id: "pages/etn/realtime";
+    page: "/etn/realtime";
+  };
+  "./pages/etn/holdings.tsx": {
+    id: "pages/etn/holdings";
+    page: "/etn/holdings";
+  };
   "./pages/research/market-overview.tsx": {
     id: "pages/research/market-overview";
     page: "/research/market-overview";
@@ -132,10 +132,6 @@ type RouteFiles = {
   "./pages/operations/risk.tsx": {
     id: "pages/operations/risk";
     page: "/operations/risk";
-  };
-  "./pages/market-making/monitor.tsx": {
-    id: "pages/market-making/monitor";
-    page: "/market-making/monitor";
   };
   "./pages/operations/blotter.tsx": {
     id: "pages/operations/blotter";
@@ -160,5 +156,9 @@ type RouteFiles = {
   "./pages/options/strategy-lab.tsx": {
     id: "pages/options/strategy-lab";
     page: "/options/strategy-lab";
+  };
+  "./pages/market-making/monitor.tsx": {
+    id: "pages/market-making/monitor";
+    page: "/market-making/monitor";
   };
 };
