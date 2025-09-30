@@ -34,6 +34,10 @@ npm run dev
 
 Your application will be available at `http://localhost:5173`.
 
+#### Running on Codex
+
+Codex expects preview applications to bind to port `3000` and listen on all network interfaces. The Vite dev server is preconfigured for this environment, so running `npm run dev` will automatically bind to `0.0.0.0:3000`. If you need to override the port, set the `PORT` environment variable before starting the server.
+
 ## Building for Production
 
 Create a production build:
