@@ -752,10 +752,10 @@ export default function MiddleLevelPnlPage() {
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-background">
       <div className="flex flex-1 flex-col gap-6 px-4 pb-6 pt-4 lg:px-6 xl:px-8">
-        <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,4fr)_minmax(0,6fr)] xl:items-start">
+        <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,5fr)] xl:items-start">
           <div className="flex flex-col gap-6">
             <section className="flex flex-col gap-6 rounded-lg border border-border/70 bg-background/80 p-4 shadow-sm shadow-black/5">
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] xl:items-start">
+              <div className="grid gap-6">
                 <div className="flex flex-col gap-4">
                   <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-foreground">Middle-Level P&L</h1>
@@ -830,6 +830,8 @@ export default function MiddleLevelPnlPage() {
                       Fund scope: {selectedFund === ALL_FUNDS_VALUE ? "All funds" : selectedFund}
                     </span>
                   </div>
+                </div>
+                <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div className="rounded-lg border border-border/70 bg-background/80 p-3">
                       <p className="text-xs font-medium uppercase text-muted-foreground">Day P&L</p>
@@ -850,74 +852,59 @@ export default function MiddleLevelPnlPage() {
                       </p>
                     </div>
                   </div>
-                </div>
-                <div className="rounded-lg border border-border/70 bg-background/60 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h2 className="text-lg font-semibold text-foreground">Team profile</h2>
-                      <p className="text-xs text-muted-foreground">
-                        Loss limits, governance status, and operating context.
-                      </p>
-                    </div>
-                    {selectedTeamDetails ? (
-                      <span
-                        className={cn(
-                          "rounded-full border px-3 py-1 text-xs font-semibold capitalize tracking-wide",
-                          TEAM_STATUS_STYLES[selectedTeamDetails.status],
-                        )}
-                      >
-                        {selectedTeamDetails.status}
-                      </span>
-                    ) : null}
-                  </div>
-                  {selectedTeamDetails ? (
-                    <div className="mt-4 flex flex-col gap-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                          <p className="text-xs font-medium uppercase text-muted-foreground">Lead</p>
-                          <p className="mt-1 text-sm font-semibold text-foreground">
-                            {selectedTeamDetails.manager}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                          <p className="text-xs font-medium uppercase text-muted-foreground">Headcount</p>
-                          <p className="mt-1 text-sm font-semibold text-foreground">
-                            {selectedTeamDetails.headcount} FTE
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                          <p className="text-xs font-medium uppercase text-muted-foreground">Monthly loss limit</p>
-                          <p className="mt-1 text-sm font-semibold text-foreground">
-                            {formatMillions(selectedTeamDetails.monthlyLossLimit)}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                          <p className="text-xs font-medium uppercase text-muted-foreground">Quarterly loss limit</p>
-                          <p className="mt-1 text-sm font-semibold text-foreground">
-                            {formatMillions(selectedTeamDetails.quarterlyLossLimit)}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                          <p className="text-xs font-medium uppercase text-muted-foreground">Notional limit</p>
-                          <p className="mt-1 text-sm font-semibold text-foreground">
-                            {formatAum(selectedTeamDetails.notionalLimit)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                        <p className="text-xs font-medium uppercase text-muted-foreground">Current risk utilisation</p>
-                        <p className="mt-1 text-sm font-semibold text-foreground">
-                          {formatPercent(selectedTeamDetails.riskUsage)}
+                  <div className="rounded-lg border border-border/70 bg-background/60 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h2 className="text-lg font-semibold text-foreground">Team profile</h2>
+                        <p className="text-xs text-muted-foreground">
+                          Loss limits, governance status, and operating context.
                         </p>
                       </div>
                     </div>
-                  ) : (
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Select a team from the summary grid to surface mandate limits and governance details.
-                    </p>
-                  )}
+                    {selectedTeamDetails ? (
+                      <div className="mt-4 grid gap-2">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 bg-background/80 px-3 py-2">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Governance status</p>
+                          <span
+                            className={cn(
+                              "rounded-full border px-3 py-1 text-xs font-semibold capitalize tracking-wide",
+                              TEAM_STATUS_STYLES[selectedTeamDetails.status],
+                            )}
+                          >
+                            {selectedTeamDetails.status}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 bg-background/80 px-3 py-2">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Monthly loss limit</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {formatMillions(selectedTeamDetails.monthlyLossLimit)}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 bg-background/80 px-3 py-2">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Quarterly loss limit</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {formatMillions(selectedTeamDetails.quarterlyLossLimit)}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 bg-background/80 px-3 py-2">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Notional limit</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {formatAum(selectedTeamDetails.notionalLimit)}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/70 bg-background/80 px-3 py-2">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Current risk utilisation</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {formatPercent(selectedTeamDetails.riskUsage)}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-4 text-sm text-muted-foreground">
+                        Select a team from the summary grid to surface mandate limits and governance details.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </section>
