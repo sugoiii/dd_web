@@ -10,6 +10,10 @@ const managementRoutes = [
     "./pages/management/fees-adjustments.tsx",
   ),
   route(
+    "/management/middle-level-pnl",
+    "./pages/management/middle-level-pnl.tsx",
+  ),
+  route(
     "/management/reconciliation-workbench",
     "./pages/management/reconciliation-workbench.tsx",
   ),
