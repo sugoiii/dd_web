@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { MetaDescriptor } from "react-router";
 import type { ColDef } from "ag-grid-enterprise";
 import { ModuleRegistry, AllEnterpriseModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
@@ -9,6 +10,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Badge } from "~/components/ui/badge";
 
 ModuleRegistry.registerModules([AllEnterpriseModule]);
+
+export function meta(): MetaDescriptor[] {
+  return [
+    { title: "Desk Dashboard" },
+    {
+      name: "description",
+      content: "Unified landing page that surfaces live metrics across the stack.",
+    },
+  ];
+}
 
 interface IRow {
   name: string;

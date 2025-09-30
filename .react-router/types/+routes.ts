@@ -61,16 +61,29 @@ type Pages = {
   "/operations/preferences": {
     params: {};
   };
+  "/options/realtime": {
+    params: {};
+  };
+  "/options/risk-dashboard": {
+    params: {};
+  };
+  "/options/strategy-lab": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/market-making/monitor" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
+    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/market-making/monitor" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/market-making/monitor" | "/operations/blotter" | "/operations/team" | "/operations/preferences";
+    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/market-making/monitor" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab";
+  };
+  "./pages/main.tsx": {
+    id: "pages/main";
+    page: "/";
   };
   "./pages/etn/main.tsx": {
     id: "pages/etn/main";
@@ -135,5 +148,17 @@ type RouteFiles = {
   "./pages/operations/preferences.tsx": {
     id: "pages/operations/preferences";
     page: "/operations/preferences";
+  };
+  "./pages/options/realtime.tsx": {
+    id: "pages/options/realtime";
+    page: "/options/realtime";
+  };
+  "./pages/options/risk-dashboard.tsx": {
+    id: "pages/options/risk-dashboard";
+    page: "/options/risk-dashboard";
+  };
+  "./pages/options/strategy-lab.tsx": {
+    id: "pages/options/strategy-lab";
+    page: "/options/strategy-lab";
   };
 };
