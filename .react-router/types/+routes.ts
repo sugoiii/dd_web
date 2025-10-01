@@ -73,16 +73,19 @@ type Pages = {
   "/market-making/monitor": {
     params: {};
   };
+  "/strategy/realtime-management": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/strategy/realtime-management";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/strategy/realtime-management";
   };
   "./pages/main.tsx": {
     id: "pages/main";
@@ -167,5 +170,9 @@ type RouteFiles = {
   "./pages/market-making/monitor.tsx": {
     id: "pages/market-making/monitor";
     page: "/market-making/monitor";
+  };
+  "./pages/strategy/realtime-management.tsx": {
+    id: "pages/strategy/realtime-management";
+    page: "/strategy/realtime-management";
   };
 };

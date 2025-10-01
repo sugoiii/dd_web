@@ -52,6 +52,10 @@ const marketMakingRoutes = [
   route("/market-making/monitor", "./pages/market-making/monitor.tsx"),
 ];
 
+const strategyRoutes = [
+  route("/strategy/realtime-management", "./pages/strategy/realtime-management.tsx"),
+];
+
 export default [
   layout("./layout.tsx", [
     ...dashboardRoutes,
@@ -61,5 +65,6 @@ export default [
     ...operationsRoutes,
     ...optionsRoutes,
     ...marketMakingRoutes,
+    ...strategyRoutes,
   ]),
 ] satisfies RouteConfig;
