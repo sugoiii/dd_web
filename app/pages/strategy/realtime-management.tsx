@@ -2,6 +2,14 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "~/components/ui/drawer";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -11,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { Switch } from "~/components/ui/switch";
+import { ScrollArea } from "~/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -20,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { Switch } from "~/components/ui/switch";
 
 const formatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
@@ -264,6 +273,10 @@ function computeTargetLevels(strategy: StrategyRow) {
 
 export default function RealTimeManagement() {
   const [strategies, setStrategies] = useState(initialStrategies);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [focusedStrategyId, setFocusedStrategyId] = useState<string | null>(
+    null,
+  );
 
   const summary = useMemo(() => {
     return strategies.reduce(
@@ -274,8 +287,13 @@ export default function RealTimeManagement() {
         acc.totalNotional += position.notional;
         acc.netDelta += position.delta;
         acc.averageBasis += basisBps;
-        acc.workingOrders += orders.filter((order) => order.status === "Working").length;
+        acc.workingOrders += orders.filter(
+          (order) => order.status === "Working",
+        ).length;
         acc.autoHedged += autoHedge ? 1 : 0;
+        acc.totalBasisPnl += position.basisPnl;
+        acc.positioned +=
+          Math.abs(position.equityQty) + Math.abs(position.futureQty) > 0 ? 1 : 0;
         return acc;
       },
       {
@@ -284,6 +302,8 @@ export default function RealTimeManagement() {
         averageBasis: 0,
         workingOrders: 0,
         autoHedged: 0,
+        totalBasisPnl: 0,
+        positioned: 0,
       },
     );
   }, [strategies]);
@@ -291,6 +311,15 @@ export default function RealTimeManagement() {
   const averageBasis = strategies.length
     ? summary.averageBasis / strategies.length
     : 0;
+
+  const focusedStrategy = useMemo(
+    () =>
+      focusedStrategyId
+        ? strategies.find((strategy) => strategy.id === focusedStrategyId) ??
+          null
+        : null,
+    [focusedStrategyId, strategies],
+  );
 
   const handleStrategyUpdate = <K extends keyof StrategyRow>(
     id: string,
@@ -304,7 +333,10 @@ export default function RealTimeManagement() {
 
   const handleConfigNumberChange = (
     id: string,
-    key: keyof Pick<StrategyRow, "entryBasisBps" | "exitBasisBps" | "targetSize" | "maxNotional">,
+    key: keyof Pick<
+      StrategyRow,
+      "entryBasisBps" | "exitBasisBps" | "targetSize" | "maxNotional"
+    >,
     rawValue: string,
   ) => {
     const nextValue = Number.parseFloat(rawValue || "0");
@@ -332,373 +364,578 @@ export default function RealTimeManagement() {
     );
   };
 
+  const positionedStrategies = useMemo(
+    () =>
+      strategies.filter(
+        (strategy) =>
+          Math.abs(strategy.position.equityQty) +
+            Math.abs(strategy.position.futureQty) >
+            0 ||
+          Math.abs(strategy.position.notional) > 0,
+      ),
+    [strategies],
+  );
+
+  const workingOrderTicker = useMemo(
+    () =>
+      strategies.flatMap(({ id, symbol, orders }) =>
+        orders.map((order) => ({
+          ...order,
+          strategyId: id,
+          symbol,
+        })),
+      ),
+    [strategies],
+  );
+
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
-      <div className="flex h-full flex-col">
-        <header className="grid grid-cols-2 gap-px bg-muted/40 sm:grid-cols-4">
-          <div className="flex flex-col justify-center bg-background/90 px-4 py-5">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="flex h-screen w-full flex-col bg-background text-foreground">
+      <header className="border-b border-muted/60 bg-background/90 px-4 py-2">
+        <div className="grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-5">
+          <div className="rounded-md border border-muted/50 bg-muted/10 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               Total Notional
-            </span>
-            <span className="text-3xl font-semibold">
+            </p>
+            <p className="text-sm font-semibold">
               {currencyFormatter.format(summary.totalNotional)}
-            </span>
+            </p>
           </div>
-          <div className="flex flex-col justify-center bg-background/90 px-4 py-5">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="rounded-md border border-muted/50 bg-muted/10 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               Net Delta
-            </span>
-            <span className="text-3xl font-semibold">
+            </p>
+            <p className="text-sm font-semibold">
               {formatter.format(summary.netDelta)}
-            </span>
+            </p>
           </div>
-          <div className="flex flex-col justify-center bg-background/90 px-4 py-5">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Average Basis
-            </span>
-            <span className="text-3xl font-semibold">
-              {averageBasis.toFixed(1)} bps
-            </span>
+          <div className="rounded-md border border-muted/50 bg-muted/10 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Avg Basis
+            </p>
+            <p className="text-sm font-semibold">{averageBasis.toFixed(1)} bps</p>
           </div>
-          <div className="flex flex-col justify-center bg-background/90 px-4 py-5">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Working Orders
-            </span>
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-semibold">
-                {formatter.format(summary.workingOrders)}
+          <div className="rounded-md border border-muted/50 bg-muted/10 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Basis PnL
+            </p>
+            <p
+              className={`text-sm font-semibold ${
+                summary.totalBasisPnl >= 0
+                  ? "text-emerald-500"
+                  : "text-red-500"
+              }`}
+            >
+              {currencyFormatter.format(summary.totalBasisPnl)}
+            </p>
+          </div>
+          <div className="rounded-md border border-muted/50 bg-muted/10 px-3 py-2">
+            <p className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <span>Orders</span>
+              <Badge variant="outline" className="text-[9px] uppercase">
+                Auto {summary.autoHedged}/{strategies.length}
+              </Badge>
+            </p>
+            <p className="text-sm font-semibold">
+              {formatter.format(summary.workingOrders)} working
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex flex-1 gap-4 overflow-hidden px-4 pb-4 pt-3">
+        <section className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="mb-2 flex items-center justify-between text-[10px] uppercase text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold tracking-wide text-foreground">
+                Active strategies
               </span>
-              <Badge variant="outline" className="text-xs uppercase">
-                Auto hedge {summary.autoHedged}/{strategies.length}
+              <Badge variant="outline" className="text-[9px] uppercase">
+                {strategies.length} tracked
+              </Badge>
+              <Badge variant="secondary" className="hidden text-[9px] uppercase sm:inline-flex">
+                {summary.positioned} live
               </Badge>
             </div>
           </div>
-        </header>
-
-        <main className="flex-1 overflow-auto">
-          <div className="grid gap-px bg-muted/40">
-            {strategies.map((strategy) => {
-              const targets = computeTargetLevels(strategy);
-              return (
-                <div
-                  key={strategy.id}
-                  className="grid grid-cols-12 gap-px bg-muted/40"
-                >
-                  <section className="col-span-12 flex flex-col gap-3 bg-background/95 p-3 xl:col-span-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-lg font-semibold tracking-tight">
+          <ScrollArea className="h-full">
+            <div className="space-y-1.5 pb-4">
+              {strategies.map((strategy) => {
+                const targets = computeTargetLevels(strategy);
+                return (
+                  <article
+                    key={strategy.id}
+                    className="group rounded-md border border-muted/60 bg-background/95 px-3 py-1.5 shadow-sm transition hover:border-primary"
+                  >
+                    <div className="grid grid-cols-1 items-center gap-x-3 gap-y-1 text-[11px] sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,1.1fr)_auto]">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="text-sm font-semibold uppercase tracking-tight">
                           {strategy.symbol}
-                        </h2>
-                        <p className="text-xs text-muted-foreground">
+                        </span>
+                        <Badge variant="secondary" className="text-[9px] uppercase">
+                          {strategy.market.expectedFill} fill
+                        </Badge>
+                        <span className="hidden truncate text-[10px] uppercase text-muted-foreground xl:inline">
                           {strategy.description}
-                        </p>
+                        </span>
                       </div>
-                      <Badge variant="secondary">
-                        {strategy.market.expectedFill} fill
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+                        <span>
+                          Basis <span className="font-semibold text-foreground">{strategy.market.basisBps.toFixed(1)} bps</span>
+                        </span>
+                        <span>
+                          Entry {strategy.entryBasisBps} · Exit {strategy.exitBasisBps}
+                        </span>
+                        <span>Target {formatter.format(strategy.targetSize)}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-right text-[10px] text-muted-foreground">
+                        <div>
+                          <p className="uppercase">Notional</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {currencyFormatter.format(strategy.position.notional)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="uppercase">Delta</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {formatter.format(strategy.position.delta)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="uppercase">Net basis</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {strategy.position.netBasis.toFixed(1)} bps
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center gap-1 text-[9px] uppercase text-muted-foreground">
+                          <span>Auto</span>
+                          <Switch
+                            id={`${strategy.id}-hedge`}
+                            checked={strategy.autoHedge}
+                            onCheckedChange={(checked) =>
+                              handleStrategyUpdate(strategy.id, "autoHedge", checked)
+                            }
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] uppercase"
+                          onClick={() => {
+                            setFocusedStrategyId(strategy.id);
+                            setDrawerOpen(true);
+                          }}
+                        >
+                          Inspect
+                        </Button>
+                      </div>
+                      <div className="col-span-full flex flex-wrap items-center justify-between gap-2 pt-1 text-[10px]">
+                        <div className="flex flex-wrap items-center gap-1">
+                          {strategy.orders.map((order) => (
+                            <Badge
+                              key={`${strategy.id}-${order.id}`}
+                              variant="outline"
+                              className={`flex items-center gap-1 text-[9px] uppercase ${
+                                order.status === "Working" ? "border-amber-400 text-amber-500" : ""
+                              } ${order.status === "Working" ? "animate-pulse" : ""}`}
+                            >
+                              <span className="font-semibold">{order.side}</span>
+                              {order.product}
+                              {formatter.format(order.size)}
+                              @{priceFormatter.format(order.price)}
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-3 text-muted-foreground">
+                          <span>Dist E {targets.distanceToEntry.toFixed(1)} bps</span>
+                          <span>Dist X {targets.distanceToExit.toFixed(1)} bps</span>
+                          <span>Liquidity {strategy.market.liquidityScore}%</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Liquidity</span>
-                      <span className="font-semibold text-foreground">
-                        {strategy.market.liquidityScore}%
-                      </span>
+                  </article>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </section>
+
+        <aside className="hidden w-[320px] shrink-0 flex-col gap-3 overflow-hidden rounded-lg border border-muted/60 bg-background/80 p-3 backdrop-blur lg:flex">
+          <div className="flex items-center justify-between text-[10px] uppercase text-muted-foreground">
+            <span className="text-xs font-semibold text-foreground">Live positions</span>
+            <Badge variant="outline" className="text-[9px] uppercase">
+              {positionedStrategies.length}
+            </Badge>
+          </div>
+          <div className="overflow-hidden rounded-md border border-muted/40">
+            <Table className="text-[11px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-2">Symbol</TableHead>
+                  <TableHead className="px-2 text-right">Notional</TableHead>
+                  <TableHead className="px-2 text-right">Delta</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {positionedStrategies.length ? (
+                  positionedStrategies.map((strategy) => (
+                    <TableRow key={`position-${strategy.id}`} className="text-[11px]">
+                      <TableCell className="px-2 py-1 font-semibold uppercase text-foreground">
+                        {strategy.symbol}
+                      </TableCell>
+                      <TableCell className="px-2 py-1 text-right">
+                        {currencyFormatter.format(strategy.position.notional)}
+                      </TableCell>
+                      <TableCell className="px-2 py-1 text-right">
+                        {formatter.format(strategy.position.delta)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="px-2 py-2 text-center text-muted-foreground">
+                      No open positions
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] uppercase text-muted-foreground">
+            <span className="text-xs font-semibold text-foreground">Order tape</span>
+            <Badge variant="secondary" className="text-[9px] uppercase">
+              {workingOrderTicker.length}
+            </Badge>
+          </div>
+          <div className="flex-1 overflow-hidden rounded-md border border-muted/40">
+            <ScrollArea className="h-full">
+              <div className="divide-y divide-muted/40">
+                {workingOrderTicker.length ? (
+                  workingOrderTicker.map((order) => (
+                    <div
+                      key={`${order.strategyId}-${order.id}`}
+                      className="flex items-center justify-between px-2 py-1 text-[10px]"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold uppercase text-foreground">
+                          {order.symbol}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`text-[9px] uppercase ${
+                            order.status === "Working"
+                              ? "border-amber-400 text-amber-500"
+                              : order.status === "Filled"
+                                ? "border-emerald-400 text-emerald-500"
+                                : "border-destructive/60 text-destructive"
+                          }`}
+                        >
+                          {order.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span className="font-semibold text-foreground">
+                          {order.side}
+                        </span>
+                        <span>{order.product}</span>
+                        <span>{formatter.format(order.size)}</span>
+                        <span>@ {priceFormatter.format(order.price)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Auto hedge</span>
-                      <Switch
-                        checked={strategy.autoHedge}
-                        onCheckedChange={(checked) =>
-                          handleStrategyUpdate(strategy.id, "autoHedge", checked)
+                  ))
+                ) : (
+                  <div className="px-2 py-6 text-center text-muted-foreground">
+                    No recent orders
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </aside>
+      </main>
+
+      <Drawer
+        direction="right"
+        open={drawerOpen && Boolean(focusedStrategy)}
+        onOpenChange={(open) => {
+          setDrawerOpen(open);
+          if (!open) {
+            setFocusedStrategyId(null);
+          }
+        }}
+      >
+        <DrawerContent className="sm:max-w-lg">
+          {focusedStrategy ? (
+            <div className="flex h-full flex-col">
+              <DrawerHeader className="border-b border-muted/60 bg-background/95">
+                <DrawerTitle className="text-base font-semibold uppercase">
+                  {focusedStrategy.symbol}
+                </DrawerTitle>
+                <DrawerDescription className="text-[11px] uppercase">
+                  Execution detail & adjustments
+                </DrawerDescription>
+              </DrawerHeader>
+              <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 text-[11px]">
+                <section className="grid gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-muted-foreground">
+                    <span>{focusedStrategy.description}</span>
+                    <Badge variant="secondary" className="text-[9px] uppercase">
+                      {focusedStrategy.market.expectedFill} fill
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label
+                        htmlFor={`${focusedStrategy.id}-drawer-direction`}
+                        className="text-[10px] uppercase text-muted-foreground"
+                      >
+                        Bias
+                      </Label>
+                      <Select
+                        value={focusedStrategy.direction}
+                        onValueChange={(value: StrategyDirection) =>
+                          handleStrategyUpdate(focusedStrategy.id, "direction", value)
                         }
-                        aria-label="Toggle auto hedge"
+                      >
+                        <SelectTrigger
+                          id={`${focusedStrategy.id}-drawer-direction`}
+                          className="h-8 text-xs"
+                        >
+                          <SelectValue placeholder="Select direction" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Buy Equity / Sell Futures">
+                            Buy Equity / Sell Futures
+                          </SelectItem>
+                          <SelectItem value="Sell Equity / Buy Futures">
+                            Sell Equity / Buy Futures
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor={`${focusedStrategy.id}-drawer-entry`}
+                        className="text-[10px] uppercase text-muted-foreground"
+                      >
+                        Entry bps
+                      </Label>
+                      <Input
+                        id={`${focusedStrategy.id}-drawer-entry`}
+                        type="number"
+                        className="h-8 text-xs"
+                        value={focusedStrategy.entryBasisBps}
+                        onChange={(event) =>
+                          handleConfigNumberChange(
+                            focusedStrategy.id,
+                            "entryBasisBps",
+                            event.target.value,
+                          )
+                        }
                       />
                     </div>
-                    <Button variant="outline" className="w-full">
-                      Sync context
-                    </Button>
-                  </section>
+                    <div>
+                      <Label
+                        htmlFor={`${focusedStrategy.id}-drawer-exit`}
+                        className="text-[10px] uppercase text-muted-foreground"
+                      >
+                        Exit bps
+                      </Label>
+                      <Input
+                        id={`${focusedStrategy.id}-drawer-exit`}
+                        type="number"
+                        className="h-8 text-xs"
+                        value={focusedStrategy.exitBasisBps}
+                        onChange={(event) =>
+                          handleConfigNumberChange(
+                            focusedStrategy.id,
+                            "exitBasisBps",
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor={`${focusedStrategy.id}-drawer-target`}
+                        className="text-[10px] uppercase text-muted-foreground"
+                      >
+                        Target size
+                      </Label>
+                      <Input
+                        id={`${focusedStrategy.id}-drawer-target`}
+                        type="number"
+                        className="h-8 text-xs"
+                        value={focusedStrategy.targetSize}
+                        onChange={(event) =>
+                          handleConfigNumberChange(
+                            focusedStrategy.id,
+                            "targetSize",
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor={`${focusedStrategy.id}-drawer-notional`}
+                        className="text-[10px] uppercase text-muted-foreground"
+                      >
+                        Max notional
+                      </Label>
+                      <Input
+                        id={`${focusedStrategy.id}-drawer-notional`}
+                        type="number"
+                        className="h-8 text-xs"
+                        value={focusedStrategy.maxNotional}
+                        onChange={(event) =>
+                          handleConfigNumberChange(
+                            focusedStrategy.id,
+                            "maxNotional",
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </section>
 
-                  <section className="col-span-12 bg-background/95 p-3 xl:col-span-3">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Strategy configuration
-                    </h3>
-                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                      <div className="col-span-2">
-                        <Label htmlFor={`${strategy.id}-direction`}>Bias</Label>
-                        <Select
-                          value={strategy.direction}
-                          onValueChange={(value: StrategyDirection) =>
-                            handleStrategyUpdate(strategy.id, "direction", value)
-                          }
-                        >
-                          <SelectTrigger id={`${strategy.id}-direction`} className="h-9">
-                            <SelectValue placeholder="Select direction" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Buy Equity / Sell Futures">
-                              Buy Equity / Sell Futures
-                            </SelectItem>
-                            <SelectItem value="Sell Equity / Buy Futures">
-                              Sell Equity / Buy Futures
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor={`${strategy.id}-entry`}>Entry basis (bps)</Label>
-                        <Input
-                          id={`${strategy.id}-entry`}
-                          type="number"
-                          value={strategy.entryBasisBps}
-                          onChange={(event) =>
-                            handleConfigNumberChange(
-                              strategy.id,
-                              "entryBasisBps",
-                              event.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`${strategy.id}-exit`}>Exit basis (bps)</Label>
-                        <Input
-                          id={`${strategy.id}-exit`}
-                          type="number"
-                          value={strategy.exitBasisBps}
-                          onChange={(event) =>
-                            handleConfigNumberChange(
-                              strategy.id,
-                              "exitBasisBps",
-                              event.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`${strategy.id}-size`}>Target size (shares)</Label>
-                        <Input
-                          id={`${strategy.id}-size`}
-                          type="number"
-                          value={strategy.targetSize}
-                          onChange={(event) =>
-                            handleConfigNumberChange(
-                              strategy.id,
-                              "targetSize",
-                              event.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`${strategy.id}-notional`}>Max notional (USD)</Label>
-                        <Input
-                          id={`${strategy.id}-notional`}
-                          type="number"
-                          value={strategy.maxNotional}
-                          onChange={(event) =>
-                            handleConfigNumberChange(
-                              strategy.id,
-                              "maxNotional",
-                              event.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                  </section>
+                <section className="grid grid-cols-2 gap-3 text-[10px] text-muted-foreground">
+                  <div className="rounded-md border border-muted/60 bg-muted/10 p-3">
+                    <p className="uppercase">Equity qty</p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {formatter.format(focusedStrategy.position.equityQty)}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-muted/60 bg-muted/10 p-3">
+                    <p className="uppercase">Future qty</p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {formatter.format(focusedStrategy.position.futureQty)}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-muted/60 bg-muted/10 p-3">
+                    <p className="uppercase">Notional</p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {currencyFormatter.format(focusedStrategy.position.notional)}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-muted/60 bg-muted/10 p-3">
+                    <p className="uppercase">Basis PnL</p>
+                    <p
+                      className={`text-lg font-semibold ${
+                        focusedStrategy.position.basisPnl >= 0
+                          ? "text-emerald-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {currencyFormatter.format(focusedStrategy.position.basisPnl)}
+                    </p>
+                  </div>
+                </section>
 
-                  <section className="col-span-12 bg-background/95 p-3 xl:col-span-3">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Market & triggers
-                    </h3>
-                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Equity last</p>
-                        <p className="text-lg font-semibold">
-                          {priceFormatter.format(strategy.market.equityPrice)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Future last</p>
-                        <p className="text-lg font-semibold">
-                          {priceFormatter.format(strategy.market.futurePrice)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Live basis</p>
-                        <p className="text-lg font-semibold">
-                          {strategy.market.basisBps.toFixed(1)} bps
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          vs entry {strategy.entryBasisBps} bps
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Distance</p>
-                        <p className="text-lg font-semibold">
-                          {targets.distanceToEntry.toFixed(1)} bps
-                        </p>
-                        <p className="text-xs text-muted-foreground">to entry trigger</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Equity trigger</p>
-                        <p className="text-lg font-semibold">
-                          Entry {priceFormatter.format(targets.entryEquity)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Exit {priceFormatter.format(targets.exitEquity)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Future trigger</p>
-                        <p className="text-lg font-semibold">
-                          Entry {priceFormatter.format(targets.entryFuture)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Exit {priceFormatter.format(targets.exitFuture)}
-                        </p>
-                      </div>
+                <section className="grid gap-3 text-[10px]">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label
+                        htmlFor={`${focusedStrategy.id}-drawer-stoploss`}
+                        className="text-[10px] uppercase text-muted-foreground"
+                      >
+                        Stop loss (bps)
+                      </Label>
+                      <Input
+                        id={`${focusedStrategy.id}-drawer-stoploss`}
+                        type="number"
+                        className="h-8 text-xs"
+                        value={focusedStrategy.risk.stopLossBps}
+                        onChange={(event) =>
+                          handleRiskNumberChange(
+                            focusedStrategy.id,
+                            "stopLossBps",
+                            event.target.value,
+                          )
+                        }
+                      />
                     </div>
-                  </section>
+                    <div>
+                      <Label
+                        htmlFor={`${focusedStrategy.id}-drawer-slippage`}
+                        className="text-[10px] uppercase text-muted-foreground"
+                      >
+                        Max slippage (bps)
+                      </Label>
+                      <Input
+                        id={`${focusedStrategy.id}-drawer-slippage`}
+                        type="number"
+                        className="h-8 text-xs"
+                        value={focusedStrategy.risk.maxSlippageBps}
+                        onChange={(event) =>
+                          handleRiskNumberChange(
+                            focusedStrategy.id,
+                            "maxSlippageBps",
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-muted/60 bg-muted/10 p-3 text-[10px] text-muted-foreground">
+                    <span>Auto hedge</span>
+                    <Switch
+                      id={`${focusedStrategy.id}-drawer-hedge`}
+                      checked={focusedStrategy.autoHedge}
+                      onCheckedChange={(checked) =>
+                        handleStrategyUpdate(focusedStrategy.id, "autoHedge", checked)
+                      }
+                    />
+                  </div>
+                </section>
 
-                  <section className="col-span-12 bg-background/95 p-0 xl:col-span-2">
-                    <div className="flex items-center justify-between px-3 pt-3">
-                      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Orders
-                      </h3>
-                      <Badge variant="outline" className="text-[10px] uppercase">
-                        {strategy.orders.filter((order) => order.status === "Working").length} active
-                      </Badge>
-                    </div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-[10px] uppercase">Product</TableHead>
-                          <TableHead className="text-[10px] uppercase">Side</TableHead>
-                          <TableHead className="text-[10px] uppercase">Size</TableHead>
-                          <TableHead className="text-[10px] uppercase">Px</TableHead>
-                          <TableHead className="text-[10px] uppercase">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {strategy.orders.map((order) => (
-                          <TableRow key={order.id} className="text-xs">
-                            <TableCell className="font-medium">{order.product}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">{order.side}</Badge>
-                            </TableCell>
-                            <TableCell>{formatter.format(order.size)}</TableCell>
-                            <TableCell>{priceFormatter.format(order.price)}</TableCell>
-                            <TableCell>
-                              <span
-                                className={
-                                  order.status === "Working"
-                                    ? "text-amber-500"
-                                    : order.status === "Filled"
-                                    ? "text-emerald-500"
-                                    : "text-muted-foreground"
-                                }
-                              >
-                                {order.status}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </section>
-
-                  <section className="col-span-12 bg-background/95 p-3 xl:col-span-2">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Position & risk
-                    </h3>
-                    <div className="mt-3 space-y-3 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Equity qty</span>
-                        <span className="font-semibold">
-                          {formatter.format(strategy.position.equityQty)}
-                        </span>
+                <section className="grid gap-2">
+                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+                    Working orders
+                  </p>
+                  <div className="space-y-1">
+                    {focusedStrategy.orders.map((order) => (
+                      <div
+                        key={`${focusedStrategy.id}-drawer-${order.id}`}
+                        className="flex items-center justify-between rounded-md border border-muted/60 bg-background/90 px-2 py-1 text-[10px]"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`text-[9px] uppercase ${
+                              order.status === "Working"
+                                ? "border-amber-400 text-amber-500"
+                                : order.status === "Filled"
+                                  ? "border-emerald-400 text-emerald-500"
+                                  : "border-destructive/60 text-destructive"
+                            }`}
+                          >
+                            {order.status}
+                          </Badge>
+                          <span className="font-semibold uppercase text-foreground">
+                            {order.side} {order.product}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span>{formatter.format(order.size)}</span>
+                          <span>@ {priceFormatter.format(order.price)}</span>
+                          <span>{order.venue}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Future qty</span>
-                        <span className="font-semibold">
-                          {formatter.format(strategy.position.futureQty)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Notional</span>
-                        <span className="font-semibold">
-                          {currencyFormatter.format(strategy.position.notional)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Delta</span>
-                        <span className="font-semibold">
-                          {formatter.format(strategy.position.delta)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Net basis</span>
-                        <span className="font-semibold">
-                          {strategy.position.netBasis.toFixed(1)} bps
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Basis PnL</span>
-                        <span
-                          className={
-                            strategy.position.basisPnl >= 0
-                              ? "font-semibold text-emerald-500"
-                              : "font-semibold text-rose-500"
-                          }
-                        >
-                          {currencyFormatter.format(strategy.position.basisPnl)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <Label htmlFor={`${strategy.id}-stop`}>Stop loss (bps)</Label>
-                        <Input
-                          id={`${strategy.id}-stop`}
-                          type="number"
-                          value={strategy.risk.stopLossBps}
-                          onChange={(event) =>
-                            handleRiskNumberChange(
-                              strategy.id,
-                              "stopLossBps",
-                              event.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`${strategy.id}-slip`}>Max slippage (bps)</Label>
-                        <Input
-                          id={`${strategy.id}-slip`}
-                          type="number"
-                          value={strategy.risk.maxSlippageBps}
-                          onChange={(event) =>
-                            handleRiskNumberChange(
-                              strategy.id,
-                              "maxSlippageBps",
-                              event.target.value,
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                    <Button className="mt-4 w-full" variant="secondary">
-                      Rebalance
-                    </Button>
-                  </section>
-                </div>
-              );
-            })}
-          </div>
-        </main>
-      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+              <DrawerFooter className="border-t border-muted/60 bg-background/95 text-[10px] uppercase text-muted-foreground">
+                Changes save instantly
+              </DrawerFooter>
+            </div>
+          ) : null}
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
