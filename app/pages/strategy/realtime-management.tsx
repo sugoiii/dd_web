@@ -1,4 +1,12 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type {
+  CellClassRules,
+  ColDef,
+  ICellRendererParams,
+  RowClickedEvent,
+  ValueFormatterParams,
+} from "ag-grid-community";
+import { AgGridReact } from "ag-grid-react";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -31,6 +39,9 @@ import {
 } from "~/components/ui/table";
 
 import { Switch } from "~/components/ui/switch";
+
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-quartz.css";
 
 const formatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
@@ -279,6 +290,9 @@ export default function RealTimeManagement() {
   const [focusedStrategyId, setFocusedStrategyId] = useState<string | null>(
     null,
   );
+  const [quickFilterText, setQuickFilterText] = useState("");
+
+  const gridRef = useRef<AgGridReact<StrategyRow>>(null);
 
   const summary = useMemo(() => {
     return strategies.reduce(
@@ -323,48 +337,53 @@ export default function RealTimeManagement() {
     [focusedStrategyId, strategies],
   );
 
-  const handleStrategyUpdate = <K extends keyof StrategyRow>(
-    id: string,
-    key: K,
-    value: StrategyRow[K],
-  ) => {
-    setStrategies((rows) =>
-      rows.map((row) => (row.id === id ? { ...row, [key]: value } : row)),
-    );
-  };
+  const handleStrategyUpdate = useCallback(
+    <K extends keyof StrategyRow>(
+      id: string,
+      key: K,
+      value: StrategyRow[K],
+    ) => {
+      setStrategies((rows) =>
+        rows.map((row) => (row.id === id ? { ...row, [key]: value } : row)),
+      );
+    },
+    [],
+  );
 
-  const handleConfigNumberChange = (
-    id: string,
-    key: keyof Pick<
-      StrategyRow,
-      "entryBasisBps" | "exitBasisBps" | "targetSize" | "maxNotional"
-    >,
-    rawValue: string,
-  ) => {
-    const nextValue = Number.parseFloat(rawValue || "0");
-    handleStrategyUpdate(id, key, Number.isNaN(nextValue) ? 0 : nextValue);
-  };
+  const handleConfigNumberChange = useCallback(
+    (
+      id: string,
+      key: keyof Pick<
+        StrategyRow,
+        "entryBasisBps" | "exitBasisBps" | "targetSize" | "maxNotional"
+      >,
+      rawValue: string,
+    ) => {
+      const nextValue = Number.parseFloat(rawValue || "0");
+      handleStrategyUpdate(id, key, Number.isNaN(nextValue) ? 0 : nextValue);
+    },
+    [handleStrategyUpdate],
+  );
 
-  const handleRiskNumberChange = (
-    id: string,
-    key: keyof StrategyRisk,
-    rawValue: string,
-  ) => {
-    const nextValue = Number.parseFloat(rawValue || "0");
-    setStrategies((rows) =>
-      rows.map((row) =>
-        row.id === id
-          ? {
-              ...row,
-              risk: {
-                ...row.risk,
-                [key]: Number.isNaN(nextValue) ? 0 : nextValue,
-              },
-            }
-          : row,
-      ),
-    );
-  };
+  const handleRiskNumberChange = useCallback(
+    (id: string, key: keyof StrategyRisk, rawValue: string) => {
+      const nextValue = Number.parseFloat(rawValue || "0");
+      setStrategies((rows) =>
+        rows.map((row) =>
+          row.id === id
+            ? {
+                ...row,
+                risk: {
+                  ...row.risk,
+                  [key]: Number.isNaN(nextValue) ? 0 : nextValue,
+                },
+              }
+            : row,
+        ),
+      );
+    },
+    [],
+  );
 
   const positionedStrategies = useMemo(
     () =>
@@ -388,6 +407,285 @@ export default function RealTimeManagement() {
         })),
       ),
     [strategies],
+  );
+
+  const defaultColDef = useMemo<ColDef<StrategyRow>>(
+    () => ({
+      resizable: true,
+      sortable: true,
+      suppressHeaderMenuButton: true,
+      flex: 1,
+      cellClass: "text-[11px]",
+    }),
+    [],
+  );
+
+  const basisPnlClassRules = useMemo<CellClassRules<StrategyRow>>(
+    () => ({
+      "text-emerald-500": (params) => (params.value ?? 0) > 0,
+      "text-destructive": (params) => (params.value ?? 0) < 0,
+    }),
+    [],
+  );
+
+  const workingOrderClassRules = useMemo<CellClassRules<StrategyRow>>(
+    () => ({
+      "animate-pulse": (params) =>
+        (params.data?.orders ?? []).some(
+          (order) => order.status === "Working",
+        ),
+      "text-amber-500": (params) =>
+        (params.data?.orders ?? []).some(
+          (order) => order.status === "Working",
+        ),
+      "bg-amber-500/10": (params) =>
+        (params.data?.orders ?? []).some(
+          (order) => order.status === "Working",
+        ),
+    }),
+    [],
+  );
+
+  const columnDefs = useMemo<ColDef<StrategyRow>[]>(
+    () => [
+      {
+        headerName: "Strategy",
+        field: "symbol",
+        pinned: "left",
+        lockPinned: true,
+        flex: 1.4,
+        minWidth: 240,
+        suppressMovable: true,
+        cellRenderer: (params: ICellRendererParams<StrategyRow>) => {
+          const data = params.data;
+          if (!data) return null;
+          return (
+            <div className="flex items-center gap-2 overflow-hidden">
+              <span className="text-xs font-semibold uppercase tracking-tight text-foreground">
+                {data.symbol}
+              </span>
+              <Badge variant="secondary" className="text-[9px] uppercase">
+                {data.market.expectedFill} fill
+              </Badge>
+              <span className="truncate text-[10px] uppercase text-muted-foreground">
+                {data.description}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Basis / Targets",
+        minWidth: 220,
+        flex: 1.2,
+        valueGetter: (params) => params.data?.market.basisBps ?? 0,
+        cellRenderer: (params: ICellRendererParams<StrategyRow>) => {
+          const data = params.data;
+          if (!data) return null;
+          const targets = computeTargetLevels(data);
+          return (
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {data.market.basisBps.toFixed(1)} bps
+              </span>
+              <span>
+                Entry {data.entryBasisBps} · Exit {data.exitBasisBps}
+              </span>
+              <span>
+                ΔE {targets.distanceToEntry.toFixed(1)} · ΔX {targets.distanceToExit.toFixed(1)}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Sizing",
+        minWidth: 200,
+        valueGetter: (params) => params.data?.targetSize ?? 0,
+        cellRenderer: (params: ICellRendererParams<StrategyRow>) => {
+          const data = params.data;
+          if (!data) return null;
+          return (
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+              <span className="text-foreground">
+                Target {formatter.format(data.targetSize)}
+              </span>
+              <span>Max {currencyFormatter.format(data.maxNotional)}</span>
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Notional",
+        minWidth: 140,
+        valueGetter: (params) => params.data?.position.notional ?? 0,
+        valueFormatter: (
+          params: ValueFormatterParams<StrategyRow, number>,
+        ) => currencyFormatter.format(params.value ?? 0),
+        cellClass: ["text-[11px]", "text-right"],
+      },
+      {
+        headerName: "Delta",
+        minWidth: 120,
+        valueGetter: (params) => params.data?.position.delta ?? 0,
+        valueFormatter: (
+          params: ValueFormatterParams<StrategyRow, number>,
+        ) => formatter.format(params.value ?? 0),
+        cellClass: ["text-[11px]", "text-right"],
+      },
+      {
+        headerName: "Net Basis",
+        minWidth: 130,
+        valueGetter: (params) => params.data?.position.netBasis ?? 0,
+        valueFormatter: (
+          params: ValueFormatterParams<StrategyRow, number>,
+        ) => `${(params.value ?? 0).toFixed(1)} bps`,
+        cellClass: ["text-[11px]", "text-right"],
+      },
+      {
+        headerName: "Basis PnL",
+        minWidth: 140,
+        valueGetter: (params) => params.data?.position.basisPnl ?? 0,
+        valueFormatter: (
+          params: ValueFormatterParams<StrategyRow, number>,
+        ) => currencyFormatter.format(params.value ?? 0),
+        cellClass: ["text-[11px]", "text-right"],
+        cellClassRules: basisPnlClassRules,
+      },
+      {
+        headerName: "Auto",
+        field: "autoHedge",
+        minWidth: 90,
+        maxWidth: 100,
+        sortable: false,
+        filter: false,
+        cellRenderer: (
+          params: ICellRendererParams<StrategyRow, boolean>,
+        ) => {
+          const data = params.data;
+          if (!data) return null;
+          return (
+            <div
+              className="flex items-center justify-center"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <Switch
+                id={`${data.id}-auto-grid`}
+                checked={data.autoHedge}
+                onCheckedChange={(checked) =>
+                  handleStrategyUpdate(data.id, "autoHedge", checked)
+                }
+              />
+            </div>
+          );
+        },
+      },
+      {
+        headerName: "Orders",
+        field: "orders",
+        flex: 1.1,
+        minWidth: 200,
+        valueGetter: (params) =>
+          params.data?.orders.filter((order) => order.status === "Working")
+            .length ?? 0,
+        cellClassRules: workingOrderClassRules,
+        cellRenderer: (params: ICellRendererParams<StrategyRow>) => {
+          const data = params.data;
+          if (!data) return null;
+          const working = data.orders.filter(
+            (order) => order.status === "Working",
+          ).length;
+          const filled = data.orders.filter(
+            (order) => order.status === "Filled",
+          ).length;
+          const cancelled = data.orders.filter(
+            (order) => order.status === "Cancelled",
+          ).length;
+          if (!data.orders.length) {
+            return <span className="text-[10px] text-muted-foreground">None</span>;
+          }
+          return (
+            <div className="flex items-center gap-1">
+              {working ? (
+                <Badge
+                  variant="outline"
+                  className="border-amber-400 text-[9px] uppercase text-amber-500"
+                >
+                  W {working}
+                </Badge>
+              ) : null}
+              {filled ? (
+                <Badge
+                  variant="outline"
+                  className="border-emerald-400 text-[9px] uppercase text-emerald-500"
+                >
+                  F {filled}
+                </Badge>
+              ) : null}
+              {cancelled ? (
+                <Badge
+                  variant="outline"
+                  className="border-destructive/60 text-[9px] uppercase text-destructive"
+                >
+                  C {cancelled}
+                </Badge>
+              ) : null}
+            </div>
+          );
+        },
+      },
+    ],
+    [basisPnlClassRules, handleStrategyUpdate, workingOrderClassRules],
+  );
+
+  const handleRowClicked = useCallback(
+    (event: RowClickedEvent<StrategyRow>) => {
+      const strategyId = event.data?.id;
+      if (!strategyId) return;
+      setFocusedStrategyId(strategyId);
+      setDrawerOpen(true);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!gridRef.current?.api) {
+      return;
+    }
+    if (!focusedStrategyId) {
+      gridRef.current.api.deselectAll();
+      return;
+    }
+    gridRef.current.api.forEachNode((node) => {
+      const isMatch = node.data?.id === focusedStrategyId;
+      node.setSelected(isMatch);
+      if (isMatch) {
+        gridRef.current?.api?.ensureNodeVisible(node);
+      }
+    });
+  }, [focusedStrategyId]);
+
+  const handleResetFilter = useCallback(() => {
+    setQuickFilterText("");
+  }, []);
+
+  const handlePositionSelect = useCallback(
+    (strategyId: string) => {
+      setQuickFilterText("");
+      setFocusedStrategyId(strategyId);
+      setDrawerOpen(true);
+    },
+    [],
+  );
+
+  const handleOrderSelect = useCallback(
+    (strategyId: string, symbol: string) => {
+      setQuickFilterText(symbol);
+      setFocusedStrategyId(strategyId);
+      setDrawerOpen(true);
+    },
+    [],
   );
 
   return (
@@ -445,7 +743,7 @@ export default function RealTimeManagement() {
       </header>
 
       <main className="flex flex-1 gap-4 overflow-hidden px-4 pb-4 pt-3">
-        <section className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="mb-2 flex items-center justify-between text-[10px] uppercase text-muted-foreground">
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold tracking-wide text-foreground">
@@ -457,111 +755,39 @@ export default function RealTimeManagement() {
               <Badge variant="secondary" className="hidden text-[9px] uppercase sm:inline-flex">
                 {summary.positioned} live
               </Badge>
+              {quickFilterText ? (
+                <Badge variant="secondary" className="text-[9px] uppercase">
+                  Filter: {quickFilterText}
+                </Badge>
+              ) : null}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-[10px] uppercase"
+              onClick={handleResetFilter}
+              disabled={!quickFilterText}
+            >
+              Reset filter
+            </Button>
           </div>
-          <ScrollArea className="h-full">
-            <div className="space-y-1.5 pb-4">
-
-              {strategies.map((strategy) => {
-                const targets = computeTargetLevels(strategy);
-                return (
-                  <article
-                    key={strategy.id}
-                    className="group rounded-md border border-muted/60 bg-background/95 px-3 py-1.5 shadow-sm transition hover:border-primary"
-                  >
-                    <div className="grid grid-cols-1 items-center gap-x-3 gap-y-1 text-[11px] sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,1.1fr)_auto]">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="text-sm font-semibold uppercase tracking-tight">
-                          {strategy.symbol}
-                        </span>
-                        <Badge variant="secondary" className="text-[9px] uppercase">
-                          {strategy.market.expectedFill} fill
-                        </Badge>
-                        <span className="hidden truncate text-[10px] uppercase text-muted-foreground xl:inline">
-                          {strategy.description}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
-                        <span>
-                          Basis <span className="font-semibold text-foreground">{strategy.market.basisBps.toFixed(1)} bps</span>
-                        </span>
-                        <span>
-                          Entry {strategy.entryBasisBps} · Exit {strategy.exitBasisBps}
-                        </span>
-                        <span>Target {formatter.format(strategy.targetSize)}</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-right text-[10px] text-muted-foreground">
-                        <div>
-                          <p className="uppercase">Notional</p>
-                          <p className="text-sm font-semibold text-foreground">
-                            {currencyFormatter.format(strategy.position.notional)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="uppercase">Delta</p>
-                          <p className="text-sm font-semibold text-foreground">
-                            {formatter.format(strategy.position.delta)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="uppercase">Net basis</p>
-                          <p className="text-sm font-semibold text-foreground">
-                            {strategy.position.netBasis.toFixed(1)} bps
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="flex items-center gap-1 text-[9px] uppercase text-muted-foreground">
-                          <span>Auto</span>
-                          <Switch
-                            id={`${strategy.id}-hedge`}
-                            checked={strategy.autoHedge}
-                            onCheckedChange={(checked) =>
-                              handleStrategyUpdate(strategy.id, "autoHedge", checked)
-                            }
-                          />
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-[10px] uppercase"
-                          onClick={() => {
-                            setFocusedStrategyId(strategy.id);
-                            setDrawerOpen(true);
-                          }}
-                        >
-                          Inspect
-                        </Button>
-                      </div>
-                      <div className="col-span-full flex flex-wrap items-center justify-between gap-2 pt-1 text-[10px]">
-                        <div className="flex flex-wrap items-center gap-1">
-                          {strategy.orders.map((order) => (
-                            <Badge
-                              key={`${strategy.id}-${order.id}`}
-                              variant="outline"
-                              className={`flex items-center gap-1 text-[9px] uppercase ${
-                                order.status === "Working" ? "border-amber-400 text-amber-500" : ""
-                              } ${order.status === "Working" ? "animate-pulse" : ""}`}
-                            >
-                              <span className="font-semibold">{order.side}</span>
-                              {order.product}
-                              {formatter.format(order.size)}
-                              @{priceFormatter.format(order.price)}
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-3 text-muted-foreground">
-                          <span>Dist E {targets.distanceToEntry.toFixed(1)} bps</span>
-                          <span>Dist X {targets.distanceToExit.toFixed(1)} bps</span>
-                          <span>Liquidity {strategy.market.liquidityScore}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </ScrollArea>
+          <div className="ag-theme-quartz density-compact flex-1 overflow-hidden rounded-md border border-muted/60 bg-background/95" style={{ height: "100%" }}>
+            <AgGridReact<StrategyRow>
+              ref={gridRef}
+              rowData={strategies}
+              columnDefs={columnDefs}
+              defaultColDef={defaultColDef}
+              animateRows
+              rowHeight={34}
+              headerHeight={34}
+              suppressHorizontalScroll
+              rowSelection="single"
+              suppressCellFocus
+              quickFilterText={quickFilterText}
+              getRowId={(params) => params.data?.id ?? ""}
+              onRowClicked={handleRowClicked}
+            />
+          </div>
         </section>
 
         <aside className="hidden w-[320px] shrink-0 flex-col gap-3 overflow-hidden rounded-lg border border-muted/60 bg-background/80 p-3 backdrop-blur lg:flex">
@@ -583,7 +809,11 @@ export default function RealTimeManagement() {
               <TableBody>
                 {positionedStrategies.length ? (
                   positionedStrategies.map((strategy) => (
-                    <TableRow key={`position-${strategy.id}`} className="text-[11px]">
+                    <TableRow
+                      key={`position-${strategy.id}`}
+                      className="cursor-pointer text-[11px] hover:bg-muted/40"
+                      onClick={() => handlePositionSelect(strategy.id)}
+                    >
                       <TableCell className="px-2 py-1 font-semibold uppercase text-foreground">
                         {strategy.symbol}
                       </TableCell>
@@ -619,7 +849,8 @@ export default function RealTimeManagement() {
                   workingOrderTicker.map((order) => (
                     <div
                       key={`${order.strategyId}-${order.id}`}
-                      className="flex items-center justify-between px-2 py-1 text-[10px]"
+                      className="flex cursor-pointer items-center justify-between px-2 py-1 text-[10px] hover:bg-muted/40"
+                      onClick={() => handleOrderSelect(order.strategyId, order.symbol)}
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-semibold uppercase text-foreground">
