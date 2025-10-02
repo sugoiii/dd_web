@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+
 import { ScrollArea } from "~/components/ui/scroll-area";
 import {
   Table,
@@ -28,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+
 import { Switch } from "~/components/ui/switch";
 
 const formatter = new Intl.NumberFormat("en-US", {
@@ -459,6 +461,7 @@ export default function RealTimeManagement() {
           </div>
           <ScrollArea className="h-full">
             <div className="space-y-1.5 pb-4">
+
               {strategies.map((strategy) => {
                 const targets = computeTargetLevels(strategy);
                 return (
