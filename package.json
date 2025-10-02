@@ -37,6 +37,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-router/node": "^7.7.1",
     "@react-router/serve": "^7.7.1",
+    "ag-grid-community": "^34.2.0",
     "ag-grid-enterprise": "^34.2.0",
     "ag-grid-react": "^34.2.0",
     "class-variance-authority": "^0.7.1",
