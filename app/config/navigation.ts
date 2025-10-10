@@ -253,6 +253,13 @@ export const navigationItems: NavItem[] = [
         icon: Activity,
         description: "Realtime monitor for quotes, hedges, and execution flows.",
       },
+      {
+        title: "KRX Gold Monitor",
+        key: "market-making-krx-gold",
+        path: "/market-making/krx-gold",
+        icon: LineChart,
+        description: "Premiums, hedging, and flow intelligence for KRX global gold.",
+      },
     ],
   },
 ];
