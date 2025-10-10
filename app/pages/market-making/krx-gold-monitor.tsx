@@ -1,15 +1,13 @@
 
 import { useMemo, useState } from "react";
-import type {
-  ColDef,
-  ICellRendererParams,
-  ValueFormatterParams,
+import {
+  themeBalham,
+  type ColDef,
+  type ICellRendererParams,
+  type ValueFormatterParams,
 } from "ag-grid-community";
 import { ModuleRegistry, AllEnterpriseModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
-
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-quartz.css";
 
 ModuleRegistry.registerModules([AllEnterpriseModule]);
 
@@ -579,88 +577,6 @@ export default function KrxGoldMonitor() {
       ...extra,
     });
 
-    const bidEdgeCol: ColDef<LadderRow> = {
-      colId: "bidEdge",
-      headerName: "Bid Lead",
-      width: 78,
-      suppressMenu: true,
-      sortable: false,
-      valueGetter: (params) => {
-        if (params.node.rowPinned) {
-          return null;
-        }
-        const data = params.data;
-        if (!data) {
-          return null;
-        }
-        const our = data.ourBid ?? 0;
-        const other = data.mmBid ?? 0;
-        if (!our || !other) {
-          return 0;
-        }
-        return our - other;
-      },
-      valueFormatter: (params) => {
-        if (params.node.rowPinned) {
-          return "";
-        }
-        const value = params.value as number | null | undefined;
-        if (!value) {
-          return "0";
-        }
-        const rounded = Math.round(value);
-        return `${rounded > 0 ? "+" : ""}${rounded}`;
-      },
-      cellClassRules: {
-        "text-emerald-500 font-semibold": (p) => (p.value as number) > 0,
-        "text-destructive font-semibold": (p) => (p.value as number) < 0,
-        "text-muted-foreground": (p) => (p.value as number) === 0,
-      },
-      headerClass: "text-[10px] uppercase tracking-wide text-muted-foreground",
-      cellClass: "text-center text-xs uppercase tracking-tight",
-    };
-
-    const askEdgeCol: ColDef<LadderRow> = {
-      colId: "askEdge",
-      headerName: "Offer Lead",
-      width: 78,
-      suppressMenu: true,
-      sortable: false,
-      valueGetter: (params) => {
-        if (params.node.rowPinned) {
-          return null;
-        }
-        const data = params.data;
-        if (!data) {
-          return null;
-        }
-        const our = data.ourAsk ?? 0;
-        const other = data.mmAsk ?? 0;
-        if (!our || !other) {
-          return 0;
-        }
-        return other - our;
-      },
-      valueFormatter: (params) => {
-        if (params.node.rowPinned) {
-          return "";
-        }
-        const value = params.value as number | null | undefined;
-        if (!value) {
-          return "0";
-        }
-        const rounded = Math.round(value);
-        return `${rounded > 0 ? "+" : ""}${rounded}`;
-      },
-      cellClassRules: {
-        "text-emerald-500 font-semibold": (p) => (p.value as number) > 0,
-        "text-destructive font-semibold": (p) => (p.value as number) < 0,
-        "text-muted-foreground": (p) => (p.value as number) === 0,
-      },
-      headerClass: "text-[10px] uppercase tracking-wide text-muted-foreground",
-      cellClass: "text-center text-xs uppercase tracking-tight",
-    };
-
     const priceColumn: ColDef<LadderRow> = {
       colId: "ladderPrice",
       headerName: "Price",
@@ -789,7 +705,7 @@ export default function KrxGoldMonitor() {
       ],
     };
 
-    return [bidGroup, bidEdgeCol, priceColumn, askEdgeCol, askGroup];
+    return [bidGroup, priceColumn, askGroup];
   }, []);
 
 
@@ -1433,7 +1349,7 @@ export default function KrxGoldMonitor() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden bg-background text-foreground">
+    <div className="relative flex h-full w-full flex-col overflow-auto bg-background text-foreground">
       <div className="flex items-start gap-3 border-b border-border/50 bg-card/60 px-3 py-2">
         <div className="flex-1 overflow-hidden">
           <div className="flex flex-wrap gap-2">
@@ -1513,66 +1429,66 @@ export default function KrxGoldMonitor() {
           </dl>
         </aside>
       </div>
-      <div className="relative flex flex-1 overflow-hidden bg-muted/5">
+      <div className="relative flex flex-1 overflow-auto bg-muted/5">
         <div className="grid h-full w-full grid-cols-12 grid-rows-8 gap-px bg-border/30 p-px">
           <div className="col-span-5 row-span-4 bg-card">
-            <div className="ag-theme-quartz h-full w-full">
-              <AgGridReact
-                style={{ width: "100%", height: "100%" }}
-                rowData={krx1kgLadderRows}
-                columnDefs={ladderColumnDefs}
-                defaultColDef={ladderDefaultColDef}
-                headerHeight={26}
-                rowHeight={34}
-                rowClassRules={ladderRowClassRules}
-                tooltipShowDelay={0}
-                tooltipHideDelay={0}
-                pinnedTopRowData={pinned1kgTopRow}
-                suppressMovableColumns
-                suppressCellFocus
-                enableCellTextSelection
-                animateRows={false}
-              />
-            </div>
+            <AgGridReact
+              className="h-full w-full"
+              theme={themeBalham}
+              style={{ width: "100%", height: "100%" }}
+              rowData={krx1kgLadderRows}
+              columnDefs={ladderColumnDefs}
+              defaultColDef={ladderDefaultColDef}
+              headerHeight={26}
+              rowHeight={34}
+              rowClassRules={ladderRowClassRules}
+              tooltipShowDelay={0}
+              tooltipHideDelay={0}
+              pinnedTopRowData={pinned1kgTopRow}
+              suppressMovableColumns
+              suppressCellFocus
+              enableCellTextSelection
+              animateRows={false}
+            />
           </div>
           <div className="col-span-5 row-span-4 bg-card">
-            <div className="ag-theme-quartz h-full w-full">
-              <AgGridReact
-                style={{ width: "100%", height: "100%" }}
-                rowData={krx100gLadderRows}
-                columnDefs={ladderColumnDefs}
-                defaultColDef={ladderDefaultColDef}
-                headerHeight={26}
-                rowHeight={34}
-                rowClassRules={ladderRowClassRules}
-                tooltipShowDelay={0}
-                tooltipHideDelay={0}
-                pinnedTopRowData={pinned100gTopRow}
-                suppressMovableColumns
-                suppressCellFocus
-                enableCellTextSelection
-                animateRows={false}
-              />
-            </div>
+            <AgGridReact
+              className="h-full w-full"
+              theme={themeBalham}
+              style={{ width: "100%", height: "100%" }}
+              rowData={krx100gLadderRows}
+              columnDefs={ladderColumnDefs}
+              defaultColDef={ladderDefaultColDef}
+              headerHeight={26}
+              rowHeight={34}
+              rowClassRules={ladderRowClassRules}
+              tooltipShowDelay={0}
+              tooltipHideDelay={0}
+              pinnedTopRowData={pinned100gTopRow}
+              suppressMovableColumns
+              suppressCellFocus
+              enableCellTextSelection
+              animateRows={false}
+            />
           </div>
           <aside className="col-span-2 row-span-4 flex flex-col bg-card">
             <header className="border-b border-border/40 px-3 py-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide">Market Signals</h2>
               <p className="text-[11px] text-muted-foreground">Premium &amp; hedge cues</p>
             </header>
-            <div className="ag-theme-quartz flex-1">
-              <AgGridReact
-                style={{ width: "100%", height: "100%" }}
-                rowData={premiumSignalRows}
-                columnDefs={premiumSignalColumnDefs}
-                headerHeight={26}
-                rowHeight={48}
-                suppressMovableColumns
-                suppressCellSelection
-                suppressMenuHide
-                enableCellTextSelection
-              />
-            </div>
+            <AgGridReact
+              className="flex-1"
+              theme={themeBalham}
+              style={{ width: "100%", height: "100%" }}
+              rowData={premiumSignalRows}
+              columnDefs={premiumSignalColumnDefs}
+              headerHeight={26}
+              rowHeight={48}
+              suppressMovableColumns
+              suppressCellSelection
+              suppressMenuHide
+              enableCellTextSelection
+            />
           </aside>
           <section className="col-span-7 row-span-2 flex flex-col bg-card">
             <header className="flex items-center justify-between border-b border-border/40 px-3 py-2">
@@ -1588,17 +1504,17 @@ export default function KrxGoldMonitor() {
                 Avg cover {(avgHedgeRatio * 100).toFixed(0)}%
               </span>
             </header>
-            <div className="flex-1">
-              <AgGridReact
-                style={{ width: "100%", height: "100%" }}
-                rowData={positionRows}
-                columnDefs={positionColumnDefs}
-                headerHeight={28}
-                rowHeight={34}
-                suppressMovableColumns
-                enableCellTextSelection
-              />
-            </div>
+            <AgGridReact
+              className="flex-1"
+              theme={themeBalham}
+              style={{ width: "100%", height: "100%" }}
+              rowData={positionRows}
+              columnDefs={positionColumnDefs}
+              headerHeight={28}
+              rowHeight={34}
+              suppressMovableColumns
+              enableCellTextSelection
+            />
           </section>
           <section className="col-span-5 row-span-2 flex flex-col bg-card">
             <header className="flex items-center justify-between border-b border-border/40 px-3 py-2">
@@ -1612,17 +1528,17 @@ export default function KrxGoldMonitor() {
                 Avg {(avgFxCoverage * 100).toFixed(0)}%
               </span>
             </header>
-            <div className="flex-1">
-              <AgGridReact
-                style={{ width: "100%", height: "100%" }}
-                rowData={fxHedgeRows}
-                columnDefs={fxHedgeColumnDefs}
-                headerHeight={28}
-                rowHeight={34}
-                suppressMovableColumns
-                enableCellTextSelection
-              />
-            </div>
+            <AgGridReact
+              className="flex-1"
+              theme={themeBalham}
+              style={{ width: "100%", height: "100%" }}
+              rowData={fxHedgeRows}
+              columnDefs={fxHedgeColumnDefs}
+              headerHeight={28}
+              rowHeight={34}
+              suppressMovableColumns
+              enableCellTextSelection
+            />
           </section>
           <section className="col-span-12 row-span-2 flex flex-col bg-card">
             <header className="flex items-center justify-between border-b border-border/40 px-3 py-2">
@@ -1630,28 +1546,28 @@ export default function KrxGoldMonitor() {
               <span className="text-[11px] uppercase text-muted-foreground">Theo vs Funding adj.</span>
             </header>
             <div className="flex flex-1 flex-col divide-y divide-border/40">
-              <div className="ag-theme-quartz flex-1">
-                <AgGridReact
-                  style={{ width: "100%", height: "100%" }}
-                  rowData={globalBasisRows}
-                  columnDefs={globalBasisColumnDefs}
-                  headerHeight={28}
-                  rowHeight={32}
-                  suppressMovableColumns
-                  enableCellTextSelection
-                />
-              </div>
-              <div className="ag-theme-quartz flex-1">
-                <AgGridReact
-                  style={{ width: "100%", height: "100%" }}
-                  rowData={futuresRows}
-                  columnDefs={futuresColumnDefs}
-                  headerHeight={28}
-                  rowHeight={32}
-                  suppressMovableColumns
-                  enableCellTextSelection
-                />
-              </div>
+              <AgGridReact
+                className="flex-1"
+                theme={themeBalham}
+                style={{ width: "100%", height: "100%" }}
+                rowData={globalBasisRows}
+                columnDefs={globalBasisColumnDefs}
+                headerHeight={28}
+                rowHeight={32}
+                suppressMovableColumns
+                enableCellTextSelection
+              />
+              <AgGridReact
+                className="flex-1"
+                theme={themeBalham}
+                style={{ width: "100%", height: "100%" }}
+                rowData={futuresRows}
+                columnDefs={futuresColumnDefs}
+                headerHeight={28}
+                rowHeight={32}
+                suppressMovableColumns
+                enableCellTextSelection
+              />
             </div>
           </section>
         </div>
@@ -1687,18 +1603,18 @@ export default function KrxGoldMonitor() {
                 Spot vs futures premium with funding adjustments. Use to time skew trades without
                 opening the external charting package.
               </p>
-              <div className="ag-theme-quartz flex-1">
-                <AgGridReact
-                  style={{ width: "100%", height: "100%" }}
-                  rowData={premiumHistoryRows}
-                  columnDefs={premiumHistoryColumnDefs}
-                  defaultColDef={premiumHistoryDefaultColDef}
-                  headerHeight={28}
-                  rowHeight={30}
-                  suppressMovableColumns
-                  enableCellTextSelection
-                />
-              </div>
+              <AgGridReact
+                className="flex-1"
+                theme={themeBalham}
+                style={{ width: "100%", height: "100%" }}
+                rowData={premiumHistoryRows}
+                columnDefs={premiumHistoryColumnDefs}
+                defaultColDef={premiumHistoryDefaultColDef}
+                headerHeight={28}
+                rowHeight={30}
+                suppressMovableColumns
+                enableCellTextSelection
+              />
             </div>
           </aside>
         </div>
