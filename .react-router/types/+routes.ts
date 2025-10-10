@@ -6,6 +6,7 @@ declare module "react-router" {
   interface Register {
     pages: Pages
     routeFiles: RouteFiles
+    routeModules: RouteModules
   }
 }
 
@@ -73,6 +74,9 @@ type Pages = {
   "/market-making/monitor": {
     params: {};
   };
+  "/market-making/krx-gold": {
+    params: {};
+  };
   "/strategy/realtime-management": {
     params: {};
   };
@@ -81,11 +85,11 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/strategy/realtime-management";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/market-making/krx-gold" | "/strategy/realtime-management";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/strategy/realtime-management";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/market-making/krx-gold" | "/strategy/realtime-management";
   };
   "./pages/main.tsx": {
     id: "pages/main";
@@ -171,8 +175,40 @@ type RouteFiles = {
     id: "pages/market-making/monitor";
     page: "/market-making/monitor";
   };
+  "./pages/market-making/krx-gold-monitor.tsx": {
+    id: "pages/market-making/krx-gold-monitor";
+    page: "/market-making/krx-gold";
+  };
   "./pages/strategy/realtime-management.tsx": {
     id: "pages/strategy/realtime-management";
     page: "/strategy/realtime-management";
   };
+};
+
+type RouteModules = {
+  "root": typeof import("./app/root.tsx");
+  "layout": typeof import("./app/./layout.tsx");
+  "pages/main": typeof import("./app/./pages/main.tsx");
+  "pages/management/overview": typeof import("./app/./pages/management/overview.tsx");
+  "pages/management/cash-control": typeof import("./app/./pages/management/cash-control.tsx");
+  "pages/management/fees-adjustments": typeof import("./app/./pages/management/fees-adjustments.tsx");
+  "pages/management/middle-level-pnl": typeof import("./app/./pages/management/middle-level-pnl.tsx");
+  "pages/management/reconciliation-workbench": typeof import("./app/./pages/management/reconciliation-workbench.tsx");
+  "pages/management/valuation-oversight": typeof import("./app/./pages/management/valuation-oversight.tsx");
+  "pages/etn/main": typeof import("./app/./pages/etn/main.tsx");
+  "pages/etn/pnl": typeof import("./app/./pages/etn/pnl.tsx");
+  "pages/etn/realtime": typeof import("./app/./pages/etn/realtime.tsx");
+  "pages/etn/holdings": typeof import("./app/./pages/etn/holdings.tsx");
+  "pages/research/market-overview": typeof import("./app/./pages/research/market-overview.tsx");
+  "pages/research/signals": typeof import("./app/./pages/research/signals.tsx");
+  "pages/operations/risk": typeof import("./app/./pages/operations/risk.tsx");
+  "pages/operations/blotter": typeof import("./app/./pages/operations/blotter.tsx");
+  "pages/operations/team": typeof import("./app/./pages/operations/team.tsx");
+  "pages/operations/preferences": typeof import("./app/./pages/operations/preferences.tsx");
+  "pages/options/realtime": typeof import("./app/./pages/options/realtime.tsx");
+  "pages/options/risk-dashboard": typeof import("./app/./pages/options/risk-dashboard.tsx");
+  "pages/options/strategy-lab": typeof import("./app/./pages/options/strategy-lab.tsx");
+  "pages/market-making/monitor": typeof import("./app/./pages/market-making/monitor.tsx");
+  "pages/market-making/krx-gold-monitor": typeof import("./app/./pages/market-making/krx-gold-monitor.tsx");
+  "pages/strategy/realtime-management": typeof import("./app/./pages/strategy/realtime-management.tsx");
 };
