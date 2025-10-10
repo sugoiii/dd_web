@@ -6,7 +6,7 @@ A modern, production-ready template for building full-stack React applications u
 
 ## Features
 
-- 🚀 Server-side rendering
+- 🚀 Static single-page application build suitable for static hosts
 - ⚡️ Hot Module Replacement (HMR)
 - 📦 Asset bundling and optimization
 - 🔄 Data loading and mutations
@@ -78,9 +78,18 @@ Make sure to deploy the output of `npm run build`
 ├── package.json
 ├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
 ├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
+│   └── client/    # Static assets
 ```
+
+### GitHub Pages Deployment
+
+This project ships with an automated GitHub Actions workflow (`.github/workflows/deploy.yml`) that builds the static site and publishes it to GitHub Pages.
+
+1. Ensure GitHub Pages is enabled for the repository via the **Settings → Pages** menu and set the source to **GitHub Actions**.
+2. Push to the `main` branch (or run the workflow manually from the **Actions** tab) and the site will be built with `npm run build` in SPA mode.
+3. The workflow uploads the contents of `build/client`—including an automatically generated `404.html` for client-side routing—to GitHub Pages using the recommended `deploy-pages` action.
+
+When the workflow runs in GitHub Pages it automatically adjusts the Vite `base` path, so the app will work whether it is served from `https://<user>.github.io/` or `https://<user>.github.io/<repo>/`.
 
 ## Styling
 
