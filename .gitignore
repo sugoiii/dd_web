@@ -1,0 +1,2 @@
+# Ignore generated React Router artifacts
+.react-router/
