@@ -260,6 +260,14 @@ export const navigationItems: NavItem[] = [
         icon: LineChart,
         description: "Premiums, hedging, and flow intelligence for KRX global gold.",
       },
+      {
+        title: "KRX Basis Trading",
+        key: "market-making-krx-basis",
+        path: "/market-making/krx-basis",
+        icon: Workflow,
+        description:
+          "Equity–futures basis cockpit with unified positions, carry, and execution.",
+      },
     ],
   },
 ];

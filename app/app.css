@@ -138,3 +138,17 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.ag-theme-quartz .krx-basis-row {
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.ag-theme-quartz .krx-basis-row:hover {
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.ag-theme-quartz .krx-basis-row .ag-cell {
+  align-items: center;
+  display: flex;
+}

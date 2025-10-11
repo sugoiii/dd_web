@@ -51,6 +51,7 @@ const optionsRoutes = [
 const marketMakingRoutes = [
   route("/market-making/monitor", "./pages/market-making/monitor.tsx"),
   route("/market-making/krx-gold", "./pages/market-making/krx-gold-monitor.tsx"),
+  route("/market-making/krx-basis", "./pages/market-making/krx-basis-trading.tsx"),
 ];
 
 const strategyRoutes = [
