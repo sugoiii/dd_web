@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import {
   themeBalham,
   type ColDef,
+  type ColGroupDef,
   type ICellRendererParams,
   type ValueFormatterParams,
 } from "ag-grid-community";
@@ -68,6 +69,7 @@ type GlobalBasisRow = {
   basisToKrxBps: number;
   basisToTheoBps: number;
   fundingAdjBps: number;
+  carryBps: number;
   comment: string;
 };
 
@@ -431,6 +433,7 @@ const globalBasisRows: GlobalBasisRow[] = [
     basisToKrxBps: 0,
     basisToTheoBps: krx1kgSnapshot.basisVsXauBps,
     fundingAdjBps: 18,
+    carryBps: 22,
     comment: "We lead offer; keep lean.",
   },
   {
@@ -442,6 +445,7 @@ const globalBasisRows: GlobalBasisRow[] = [
     basisToKrxBps: 36,
     basisToTheoBps: krx100gSnapshot.basisVsXauBps,
     fundingAdjBps: 22,
+    carryBps: 26,
     comment: "Retail bid still sticky.",
   },
   {
@@ -453,6 +457,7 @@ const globalBasisRows: GlobalBasisRow[] = [
     basisToKrxBps: -32,
     basisToTheoBps: -6,
     fundingAdjBps: -4,
+    carryBps: -3,
     comment: "Spot softer vs KRX prints.",
   },
   {
@@ -464,6 +469,7 @@ const globalBasisRows: GlobalBasisRow[] = [
     basisToKrxBps: -55,
     basisToTheoBps: -18,
     fundingAdjBps: -12,
+    carryBps: -18,
     comment: "Carry supported by funding.",
   },
   {
@@ -475,6 +481,7 @@ const globalBasisRows: GlobalBasisRow[] = [
     basisToKrxBps: -78,
     basisToTheoBps: -24,
     fundingAdjBps: -9,
+    carryBps: -12,
     comment: "JPY leg heavy; watch cross.",
   },
 ];
@@ -518,7 +525,9 @@ const premiumHistoryRows: PremiumHistoryRow[] = [
 ];
 
 export default function KrxGoldMonitor() {
-  const ladderColumnDefs = useMemo<ColDef<LadderRow>[]>(() => {
+  const ladderColumnDefs = useMemo<
+    (ColDef<LadderRow> | ColGroupDef<LadderRow>)[]
+  >(() => {
     const formatSize = (value?: number) =>
       value && value !== 0 ? sizeFormatter.format(value) : "";
 
@@ -533,16 +542,16 @@ export default function KrxGoldMonitor() {
       field,
       headerName: label,
       width: extra?.width ?? 72,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       sortable: false,
       valueFormatter: (params: ValueFormatterParams<LadderRow, number>) => {
-        if (params.node.rowPinned) {
+        if (params.node?.rowPinned) {
           return label;
         }
         return formatSize(params.value as number | undefined);
       },
       tooltipValueGetter: (params) => {
-        if (params.node.rowPinned) {
+        if (params.node?.rowPinned) {
           return `${label} ${side} size`;
         }
         const data = params.data;
@@ -570,7 +579,7 @@ export default function KrxGoldMonitor() {
       },
       cellClassRules: {
         "text-muted-foreground": (p) =>
-          !p.node.rowPinned && (!p.value || (p.value as number) === 0),
+          !p.node?.rowPinned && (!p.value || (p.value as number) === 0),
         ...(extra?.cellClassRules ?? {}),
       },
       cellClass: "px-1 text-right text-sm tabular-nums tracking-tight",
@@ -581,10 +590,10 @@ export default function KrxGoldMonitor() {
       colId: "ladderPrice",
       headerName: "Price",
       width: 108,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       sortable: false,
       cellRenderer: (params: ICellRendererParams<LadderRow>) => {
-        if (params.node.rowPinned) {
+        if (params.node?.rowPinned) {
           return (
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               {params.data?.level}
@@ -619,7 +628,7 @@ export default function KrxGoldMonitor() {
         );
       },
       tooltipValueGetter: (params) => {
-        if (params.node.rowPinned) {
+        if (params.node?.rowPinned) {
           return params.data?.level ?? "";
         }
         const data = params.data;
@@ -644,18 +653,18 @@ export default function KrxGoldMonitor() {
       cellClass: "px-2",
     };
 
-    const bidGroup: ColDef<LadderRow> = {
+    const bidGroup: ColGroupDef<LadderRow> = {
       headerName: "Bid Size",
       marryChildren: true,
       headerClass: "text-[10px] uppercase tracking-wide text-muted-foreground",
-      pinned: "left",
       children: [
-        makeSizeColumn("nonMmBidQty", "bid", "Public"),
-        makeSizeColumn("mmBidQty", "bid", "Other MM"),
+        makeSizeColumn("nonMmBidQty", "bid", "Public", { pinned: "left" }),
+        makeSizeColumn("mmBidQty", "bid", "Other MM", { pinned: "left" }),
         makeSizeColumn("ourBidQty", "bid", "Our", {
+          pinned: "left",
           cellClassRules: {
             "font-semibold text-emerald-500": (p) => {
-              if (p.node.rowPinned) {
+              if (p.node?.rowPinned) {
                 return false;
               }
               const data = p.data as LadderRow | undefined;
@@ -674,16 +683,16 @@ export default function KrxGoldMonitor() {
       ],
     };
 
-    const askGroup: ColDef<LadderRow> = {
+    const askGroup: ColGroupDef<LadderRow> = {
       headerName: "Offer Size",
       marryChildren: true,
       headerClass: "text-[10px] uppercase tracking-wide text-muted-foreground",
-      pinned: "right",
       children: [
         makeSizeColumn("ourAskQty", "ask", "Our", {
+          pinned: "right",
           cellClassRules: {
             "font-semibold text-rose-500": (p) => {
-              if (p.node.rowPinned) {
+              if (p.node?.rowPinned) {
                 return false;
               }
               const data = p.data as LadderRow | undefined;
@@ -700,8 +709,8 @@ export default function KrxGoldMonitor() {
             },
           },
         }),
-        makeSizeColumn("mmAskQty", "ask", "Other MM"),
-        makeSizeColumn("nonMmAskQty", "ask", "Public"),
+        makeSizeColumn("mmAskQty", "ask", "Other MM", { pinned: "right" }),
+        makeSizeColumn("nonMmAskQty", "ask", "Public", { pinned: "right" }),
       ],
     };
 
@@ -714,7 +723,7 @@ export default function KrxGoldMonitor() {
       sortable: false,
       filter: false,
       resizable: false,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       suppressMovable: true,
     }),
     [],
@@ -722,9 +731,9 @@ export default function KrxGoldMonitor() {
 
   const ladderRowClassRules = useMemo(
     () => ({
-      "bg-muted/20": (params: any) => params.node.rowPinned === "top",
+      "bg-muted/20": (params: any) => params.node?.rowPinned === "top",
       "bg-muted/10": (params: any) =>
-        params.node.rowPinned !== "top" && params.data?.level === "Top",
+        params.node?.rowPinned !== "top" && params.data?.level === "Top",
     }),
     [],
   );
@@ -797,7 +806,7 @@ export default function KrxGoldMonitor() {
       sortable: false,
       filter: false,
       resizable: false,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       suppressMovable: true,
     }),
     [],
@@ -1435,7 +1444,6 @@ export default function KrxGoldMonitor() {
             <AgGridReact
               className="h-full w-full"
               theme={themeBalham}
-              style={{ width: "100%", height: "100%" }}
               rowData={krx1kgLadderRows}
               columnDefs={ladderColumnDefs}
               defaultColDef={ladderDefaultColDef}
@@ -1455,7 +1463,6 @@ export default function KrxGoldMonitor() {
             <AgGridReact
               className="h-full w-full"
               theme={themeBalham}
-              style={{ width: "100%", height: "100%" }}
               rowData={krx100gLadderRows}
               columnDefs={ladderColumnDefs}
               defaultColDef={ladderDefaultColDef}
@@ -1479,13 +1486,11 @@ export default function KrxGoldMonitor() {
             <AgGridReact
               className="flex-1"
               theme={themeBalham}
-              style={{ width: "100%", height: "100%" }}
               rowData={premiumSignalRows}
               columnDefs={premiumSignalColumnDefs}
               headerHeight={26}
               rowHeight={48}
               suppressMovableColumns
-              suppressCellSelection
               suppressMenuHide
               enableCellTextSelection
             />
@@ -1507,7 +1512,6 @@ export default function KrxGoldMonitor() {
             <AgGridReact
               className="flex-1"
               theme={themeBalham}
-              style={{ width: "100%", height: "100%" }}
               rowData={positionRows}
               columnDefs={positionColumnDefs}
               headerHeight={28}
@@ -1531,7 +1535,6 @@ export default function KrxGoldMonitor() {
             <AgGridReact
               className="flex-1"
               theme={themeBalham}
-              style={{ width: "100%", height: "100%" }}
               rowData={fxHedgeRows}
               columnDefs={fxHedgeColumnDefs}
               headerHeight={28}
@@ -1549,7 +1552,6 @@ export default function KrxGoldMonitor() {
               <AgGridReact
                 className="flex-1"
                 theme={themeBalham}
-                style={{ width: "100%", height: "100%" }}
                 rowData={globalBasisRows}
                 columnDefs={globalBasisColumnDefs}
                 headerHeight={28}
@@ -1560,7 +1562,6 @@ export default function KrxGoldMonitor() {
               <AgGridReact
                 className="flex-1"
                 theme={themeBalham}
-                style={{ width: "100%", height: "100%" }}
                 rowData={futuresRows}
                 columnDefs={futuresColumnDefs}
                 headerHeight={28}
@@ -1606,7 +1607,6 @@ export default function KrxGoldMonitor() {
               <AgGridReact
                 className="flex-1"
                 theme={themeBalham}
-                style={{ width: "100%", height: "100%" }}
                 rowData={premiumHistoryRows}
                 columnDefs={premiumHistoryColumnDefs}
                 defaultColDef={premiumHistoryDefaultColDef}
