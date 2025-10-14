@@ -1,2 +1,4 @@
 # Ignore generated React Router artifacts
 .react-router/
+node_modules/
+build/
