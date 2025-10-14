@@ -270,4 +270,26 @@ export const navigationItems: NavItem[] = [
       },
     ],
   },
+  {
+    title: "Strategy",
+    key: "strategy",
+    icon: Workflow,
+    description: "Pair-trading controls and execution parameter governance.",
+    children: [
+      {
+        title: "Realtime Management",
+        key: "strategy-realtime-management",
+        path: "/strategy/realtime-management",
+        icon: Activity,
+        description: "Legacy control tower for systematic strategy allocation.",
+      },
+      {
+        title: "Equity Hedge Cockpit",
+        key: "strategy-equity-hedge-cockpit",
+        path: "/strategy/equity-hedge-cockpit",
+        icon: Workflow,
+        description: "High-density management view for pair-hedged equity futures.",
+      },
+    ],
+  },
 ];

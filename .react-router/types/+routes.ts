@@ -83,16 +83,19 @@ type Pages = {
   "/strategy/realtime-management": {
     params: {};
   };
+  "/strategy/equity-hedge-cockpit": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/market-making/krx-gold" | "/market-making/krx-basis" | "/strategy/realtime-management";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/market-making/krx-gold" | "/market-making/krx-basis" | "/strategy/realtime-management" | "/strategy/equity-hedge-cockpit";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/market-making/krx-gold" | "/market-making/krx-basis" | "/strategy/realtime-management";
+    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/monitor" | "/market-making/krx-gold" | "/market-making/krx-basis" | "/strategy/realtime-management" | "/strategy/equity-hedge-cockpit";
   };
   "./pages/main.tsx": {
     id: "pages/main";
@@ -190,6 +193,10 @@ type RouteFiles = {
     id: "pages/strategy/realtime-management";
     page: "/strategy/realtime-management";
   };
+  "./pages/strategy/equity-hedge-cockpit.tsx": {
+    id: "pages/strategy/equity-hedge-cockpit";
+    page: "/strategy/equity-hedge-cockpit";
+  };
 };
 
 type RouteModules = {
@@ -219,4 +226,5 @@ type RouteModules = {
   "pages/market-making/krx-gold-monitor": typeof import("./app/./pages/market-making/krx-gold-monitor.tsx");
   "pages/market-making/krx-basis-trading": typeof import("./app/./pages/market-making/krx-basis-trading.tsx");
   "pages/strategy/realtime-management": typeof import("./app/./pages/strategy/realtime-management.tsx");
+  "pages/strategy/equity-hedge-cockpit": typeof import("./app/./pages/strategy/equity-hedge-cockpit.tsx");
 };

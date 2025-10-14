@@ -56,6 +56,7 @@ const marketMakingRoutes = [
 
 const strategyRoutes = [
   route("/strategy/realtime-management", "./pages/strategy/realtime-management.tsx"),
+  route("/strategy/equity-hedge-cockpit", "./pages/strategy/equity-hedge-cockpit.tsx"),
 ];
 
 export default [
