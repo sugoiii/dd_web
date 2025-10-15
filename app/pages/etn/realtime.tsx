@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import type { ColDef } from "ag-grid-enterprise";
-import { ModuleRegistry, AllEnterpriseModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import {
   Activity,
@@ -19,8 +18,6 @@ import { Badge } from "~/components/ui/badge";
 
 import "ag-grid-enterprise/styles/ag-grid.css";
 import "ag-grid-enterprise/styles/ag-theme-quartz.css";
-
-ModuleRegistry.registerModules([AllEnterpriseModule]);
 
 const makeCellClassRules = <T,>(rules: NonNullable<ColDef<T>["cellClassRules"]>) => rules;
 
