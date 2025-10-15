@@ -2,6 +2,7 @@ import {
   forwardRef,
   type KeyboardEvent,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -42,6 +43,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { Switch } from "~/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { Progress } from "~/components/ui/progress";
 import { cn } from "~/lib/utils";
 
 import "ag-grid-community/styles/ag-grid.css";
@@ -60,14 +62,19 @@ type FillRecord = {
   status: "Pending" | "Hedged" | "Filled" | "Rejected";
 };
 
+type OrderStatus = "Idle" | "Working" | "Partially Filled" | "Filled" | "Error";
+
 type StrategyRow = {
   id: string;
   ticker: string;
   name: string;
   side: StrategySide;
   futPx: number;
+  futChange: number;
   eqPx: number;
+  eqChange: number;
   spread: number;
+  spreadChange: number;
   targetSpread: number;
   entry: number;
   exit: number;
@@ -78,6 +85,9 @@ type StrategyRow = {
   upl: number;
   latMs: number;
   status: StrategyStatus;
+  orderStatus: OrderStatus;
+  fillProgress: number;
+  lastOrderUpdate: number;
   lastChangeAt: string;
   tolerance: number;
   latencyThreshold: number;
@@ -436,6 +446,8 @@ const decimalFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+const now = Date.now();
+
 const initialStrategies: StrategyRow[] = [
   {
     id: "005930",
@@ -443,8 +455,11 @@ const initialStrategies: StrategyRow[] = [
     name: "Samsung Electronics vs KOSPI200 Mar Fut",
     side: "Buy Futures / Sell Equity",
     futPx: 712.4,
+    futChange: 0.18,
     eqPx: 706.8,
+    eqChange: -0.12,
     spread: 5.6,
+    spreadChange: 0.3,
     targetSpread: 5.1,
     entry: 4.8,
     exit: 6.2,
@@ -455,6 +470,9 @@ const initialStrategies: StrategyRow[] = [
     upl: 192000,
     latMs: 28,
     status: "ACTIVE",
+    orderStatus: "Working",
+    fillProgress: 68,
+    lastOrderUpdate: now - 52_000,
     lastChangeAt: "09:31:12",
     tolerance: 0.8,
     latencyThreshold: 75,
@@ -486,8 +504,11 @@ const initialStrategies: StrategyRow[] = [
     name: "SK Hynix vs KOSPI200 Mar Fut",
     side: "Sell Futures / Buy Equity",
     futPx: 137.86,
+    futChange: -0.09,
     eqPx: 136.9,
+    eqChange: 0.07,
     spread: -0.96,
+    spreadChange: -0.04,
     targetSpread: -1.2,
     entry: -1.4,
     exit: -0.5,
@@ -498,6 +519,9 @@ const initialStrategies: StrategyRow[] = [
     upl: 84000,
     latMs: 142,
     status: "ACTIVE",
+    orderStatus: "Partially Filled",
+    fillProgress: 42,
+    lastOrderUpdate: now - 36_000,
     lastChangeAt: "09:30:44",
     tolerance: 0.6,
     latencyThreshold: 120,
@@ -518,85 +542,88 @@ const initialStrategies: StrategyRow[] = [
         side: "Sell",
         price: 137.92,
         qty: 80,
-        status: "Pending",
+        status: "Filled",
       },
     ],
-    notes: "Hedge leg waiting on CME queue escalation.",
+    notes: "Latency monitor triggered dual-throttle at 140ms.",
   },
   {
     id: "035420",
     ticker: "035420",
-    name: "NAVER vs KOSPI200 Jun Fut",
+    name: "NAVER vs KOSPI200 Mar Fut",
     side: "Buy Futures / Sell Equity",
-    futPx: 188.12,
-    eqPx: 189.05,
-    spread: -0.93,
-    targetSpread: -0.8,
-    entry: -1.1,
-    exit: -0.3,
-    maxQty: 1300,
-    hedgeRatio: 0.77,
-    posEq: -28000,
-    posFutLots: 280,
-    upl: -42000,
+    futPx: 217.45,
+    futChange: 0.05,
+    eqPx: 215.4,
+    eqChange: -0.02,
+    spread: 2.05,
+    spreadChange: 0.07,
+    targetSpread: 1.7,
+    entry: 1.4,
+    exit: 2.4,
+    maxQty: 950,
+    hedgeRatio: 0.9,
+    posEq: -32000,
+    posFutLots: 320,
+    upl: 124000,
     latMs: 64,
-    status: "HALTED",
-    lastChangeAt: "09:29:18",
-    tolerance: 0.4,
+    status: "ACTIVE",
+    orderStatus: "Idle",
+    fillProgress: 0,
+    lastOrderUpdate: now - 95_000,
+    lastChangeAt: "09:29:51",
+    tolerance: 0.5,
     latencyThreshold: 90,
     fills: [
       {
-        id: "E035420-1",
-        time: "09:28:50",
-        leg: "Equity",
-        side: "Sell",
-        price: 189.22,
-        qty: 6000,
-        status: "Filled",
-      },
-      {
         id: "F035420-1",
-        time: "09:28:51",
+        time: "09:29:36",
         leg: "Futures",
         side: "Buy",
-        price: 188.05,
+        price: 217.3,
         qty: 60,
-        status: "Filled",
+        status: "Pending",
+      },
+      {
+        id: "E035420-1",
+        time: "09:29:48",
+        leg: "Equity",
+        side: "Sell",
+        price: 215.35,
+        qty: 6000,
+        status: "Pending",
       },
     ],
-    notes: "Manual halt: spread outside envelope for 4.6s.",
+    notes: "Monitoring NAV arb leakage after broker fee change.",
   },
   {
     id: "051910",
     ticker: "051910",
     name: "LG Chem vs KOSPI200 Mar Fut",
     side: "Sell Futures / Buy Equity",
-    futPx: 424.5,
-    eqPx: 426.2,
-    spread: -1.7,
-    targetSpread: -1.4,
-    entry: -1.8,
-    exit: -0.9,
-    maxQty: 950,
-    hedgeRatio: 0.92,
-    posEq: 15000,
-    posFutLots: -150,
-    upl: 124000,
-    latMs: 38,
+    futPx: 424.55,
+    futChange: -0.2,
+    eqPx: 421.3,
+    eqChange: 0.11,
+    spread: -3.25,
+    spreadChange: -0.09,
+    targetSpread: -3.4,
+    entry: -3.8,
+    exit: -2.6,
+    maxQty: 1200,
+    hedgeRatio: 1.12,
+    posEq: 24000,
+    posFutLots: -180,
+    upl: 46000,
+    latMs: 51,
     status: "ACTIVE",
-    lastChangeAt: "09:31:05",
-    tolerance: 0.5,
+    orderStatus: "Working",
+    fillProgress: 24,
+    lastOrderUpdate: now - 18_000,
+    lastChangeAt: "09:30:22",
+    tolerance: 0.7,
     latencyThreshold: 110,
     fills: [
-      {
-        id: "E051910-1",
-        time: "09:30:40",
-        leg: "Equity",
-        side: "Buy",
-        price: 426.1,
-        qty: 3000,
-        status: "Hedged",
-      },
       {
         id: "F051910-1",
         time: "09:30:42",
@@ -615,8 +642,11 @@ const initialStrategies: StrategyRow[] = [
     name: "Celltrion vs KOSPI200 Mar Fut",
     side: "Idle",
     futPx: 162.7,
+    futChange: 0,
     eqPx: 161.9,
+    eqChange: 0,
     spread: 0.8,
+    spreadChange: 0,
     targetSpread: 0.7,
     entry: 0.5,
     exit: 1.4,
@@ -627,6 +657,9 @@ const initialStrategies: StrategyRow[] = [
     upl: 0,
     latMs: 33,
     status: "ACTIVE",
+    orderStatus: "Idle",
+    fillProgress: 0,
+    lastOrderUpdate: now - 120_000,
     lastChangeAt: "09:26:11",
     tolerance: 0.3,
     latencyThreshold: 100,
@@ -738,6 +771,16 @@ const severityClassMap: Record<AlertSeverity, string> = {
   info: "border-slate-500/60 text-slate-500 bg-slate-500/10",
 };
 
+const ORDER_STATUS_STYLES: Record<OrderStatus, string> = {
+  Idle: "border-slate-500/60 text-slate-500 bg-slate-500/10",
+  Working: "border-blue-500/60 text-blue-500 bg-blue-500/10",
+  "Partially Filled": "border-amber-500/60 text-amber-500 bg-amber-500/10",
+  Filled: "border-emerald-500/60 text-emerald-500 bg-emerald-500/10",
+  Error: "border-red-500/60 text-red-500 bg-red-500/10",
+};
+
+const randomBetween = (min: number, max: number) => Math.random() * (max - min) + min;
+
 export function meta(): MetaDescriptor[] {
   return [
     { title: "Equity Hedge Cockpit" },
@@ -747,6 +790,107 @@ export function meta(): MetaDescriptor[] {
         "High-density cockpit to monitor and action equity-futures pair strategies with event-driven intelligence.",
     },
   ];
+}
+
+
+
+type PriceDeltaCellParams = ICellRendererParams<StrategyRow, number> & {
+  deltaField: keyof StrategyRow;
+  formatter?: Intl.NumberFormat;
+  precision?: number;
+};
+
+function PriceDeltaCell({
+  value,
+  data,
+  deltaField,
+  formatter,
+  precision = 2,
+}: PriceDeltaCellParams) {
+  const deltaValue = data ? (data[deltaField] as number | undefined) : undefined;
+  const hasDelta = typeof deltaValue === "number" && Number.isFinite(deltaValue);
+  const direction = !hasDelta || deltaValue === 0 ? "flat" : deltaValue > 0 ? "up" : "down";
+  const tone =
+    direction === "up"
+      ? "text-emerald-500"
+      : direction === "down"
+        ? "text-red-500"
+        : "text-muted-foreground";
+  const formattedValue =
+    value != null && Number.isFinite(value)
+      ? formatter
+        ? formatter.format(value)
+        : value.toFixed(precision)
+      : "—";
+
+  let formattedDelta: string | null = null;
+  if (hasDelta) {
+    const magnitude = Math.abs(deltaValue!);
+    const base = formatter ? formatter.format(magnitude) : magnitude.toFixed(precision);
+    const prefix = deltaValue! > 0 ? "+" : deltaValue! < 0 ? "-" : "";
+    formattedDelta = `${prefix}${base}`;
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span>{formattedValue}</span>
+      {formattedDelta ? (
+        <span className={cn("flex items-center gap-1 font-sans text-[11px]", tone)}>
+          {direction === "up" ? <ChevronUp className="size-3" /> : null}
+          {direction === "down" ? <ChevronDown className="size-3" /> : null}
+          <span>{formattedDelta}</span>
+        </span>
+      ) : (
+        <span className="text-[11px] text-muted-foreground">—</span>
+      )}
+    </div>
+  );
+}
+
+function OrderStatusCell({ data }: ICellRendererParams<StrategyRow>) {
+  if (!data) return null;
+  const status = data.orderStatus;
+  const badgeTone = ORDER_STATUS_STYLES[status];
+  return (
+    <div className="flex flex-col gap-1">
+      <Badge variant="outline" className={cn("w-fit text-[11px]", badgeTone)}>
+        {status}
+      </Badge>
+      {status === "Working" || status === "Partially Filled" ? (
+        <Progress value={data.fillProgress} className="h-1 w-full" />
+      ) : null}
+    </div>
+  );
+}
+
+function FillProgressCell({ value, data }: ICellRendererParams<StrategyRow, number>) {
+  const progress = value ?? data?.fillProgress ?? 0;
+  return (
+    <div className="flex items-center gap-2">
+      <Progress value={progress} className="h-1.5 w-full" />
+      <span className="w-10 text-right font-mono text-[11px]">{Math.round(progress)}%</span>
+    </div>
+  );
+}
+
+const formatElapsed = (milliseconds: number) => {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours) {
+    return `${hours}h ${minutes}m`;
+  }
+  if (minutes) {
+    return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+  }
+  return `${seconds}s`;
+};
+
+function TimeSinceCell({ data }: ICellRendererParams<StrategyRow>) {
+  if (!data) return <span className="text-muted-foreground">—</span>;
+  const elapsed = Date.now() - data.lastOrderUpdate;
+  return <span className="font-mono text-[11px]">{formatElapsed(elapsed)}</span>;
 }
 
 function StrategyDetailCell({ data }: ICellRendererParams<StrategyRow>) {
@@ -880,6 +1024,96 @@ export default function EquityHedgeCockpit() {
 
   const gridRef = useRef<AgGridReact<StrategyRow>>(null);
   const haltTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nowTs = Date.now();
+      setStrategies((prev) =>
+        prev.map((row) => {
+          const futDelta = Number(randomBetween(-0.22, 0.22).toFixed(2));
+          const eqDelta = Number(randomBetween(-0.2, 0.2).toFixed(2));
+          const nextFutPx = Number((row.futPx + futDelta).toFixed(2));
+          const nextEqPx = Number((row.eqPx + eqDelta).toFixed(2));
+          const spreadJitter = Number(randomBetween(-0.08, 0.08).toFixed(2));
+          const nextSpread = Number((row.spread + spreadJitter).toFixed(2));
+          const spreadChange = Number((nextSpread - row.spread).toFixed(2));
+          const nextLatMs = Math.max(0, Math.round(row.latMs + randomBetween(-6, 6)));
+          const nextUpl = row.upl + Math.round(randomBetween(-2500, 2500));
+
+          let nextOrderStatus = row.orderStatus;
+          let nextFillProgress = row.fillProgress;
+          let lastOrderUpdate = row.lastOrderUpdate;
+          let statusChanged = false;
+
+          if (row.status === "ACTIVE") {
+            if (nextOrderStatus === "Working" || nextOrderStatus === "Partially Filled") {
+              if (Math.random() < 0.7) {
+                const increment = Math.max(1, Math.round(randomBetween(1, 7)));
+                const updatedProgress = Math.min(100, nextFillProgress + increment);
+                if (updatedProgress !== nextFillProgress) {
+                  nextFillProgress = updatedProgress;
+                  statusChanged = true;
+                  nextOrderStatus = updatedProgress >= 100 ? "Filled" : "Partially Filled";
+                }
+              }
+            } else if (nextOrderStatus === "Filled") {
+              if (Math.random() < 0.12) {
+                nextOrderStatus = "Working";
+                nextFillProgress = Math.round(randomBetween(0, 12));
+                statusChanged = true;
+              }
+            } else if (nextOrderStatus === "Idle") {
+              if (Math.random() < 0.1) {
+                nextOrderStatus = "Working";
+                nextFillProgress = Math.round(randomBetween(5, 15));
+                statusChanged = true;
+              }
+            } else if (nextOrderStatus === "Error") {
+              if (Math.random() < 0.4) {
+                nextOrderStatus = "Working";
+                nextFillProgress = 0;
+                statusChanged = true;
+              }
+            }
+          }
+
+          if (statusChanged) {
+            lastOrderUpdate = nowTs;
+          }
+
+          const shouldTimestamp =
+            statusChanged || Math.abs(spreadChange) > row.tolerance / 2 || Math.abs(futDelta) > 0.15;
+
+          return {
+            ...row,
+            futPx: nextFutPx,
+            futChange: futDelta,
+            eqPx: nextEqPx,
+            eqChange: eqDelta,
+            spread: nextSpread,
+            spreadChange,
+            upl: nextUpl,
+            latMs: nextLatMs,
+            orderStatus: nextOrderStatus,
+            fillProgress: nextFillProgress,
+            lastOrderUpdate,
+            lastChangeAt: shouldTimestamp ? new Date(nowTs).toLocaleTimeString() : row.lastChangeAt,
+          };
+        }),
+      );
+
+      gridRef.current?.api?.refreshCells({ columns: ["lastOrderUpdate"], force: true });
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      gridRef.current?.api?.refreshCells({ columns: ["lastOrderUpdate"], force: true });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const totalSummary = useMemo(() => {
     return strategies.reduce(
@@ -1180,30 +1414,98 @@ export default function EquityHedgeCockpit() {
         },
       },
       {
-        field: "futPx",
-        headerName: "Fut Px",
-        minWidth: 92,
-        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
-          params.value != null ? priceFormatter.format(params.value) : "",
-      },
-      {
-        field: "eqPx",
-        headerName: "Eq Px",
-        minWidth: 92,
-        valueFormatter: (params) => (params.value != null ? priceFormatter.format(params.value) : ""),
-      },
-      {
-        field: "spread",
-        headerName: "Spread",
-        minWidth: 92,
-        valueFormatter: (params) => (params.value != null ? decimalFormatter.format(params.value) : ""),
-        cellClassRules: {
-          "bg-amber-500/10": (params) => {
-            const data = params.data;
-            if (!data || params.value == null) return false;
-            return Math.abs(params.value - data.targetSpread) >= data.tolerance;
+        headerName: "Pricing",
+        marryChildren: true,
+        children: [
+          {
+            field: "futPx",
+            headerName: "Futures",
+            minWidth: 120,
+            cellRenderer: PriceDeltaCell,
+            cellRendererParams: { deltaField: "futChange", formatter: priceFormatter },
+            cellClassRules: {
+              "bg-red-500/10": (params) => {
+                const data = params.data;
+                if (!data || typeof data.futChange !== "number") return false;
+                if (data.side === "Buy Futures / Sell Equity") {
+                  return data.futChange < 0;
+                }
+                if (data.side === "Sell Futures / Buy Equity") {
+                  return data.futChange > 0;
+                }
+                return false;
+              },
+              "bg-emerald-500/10": (params) => {
+                const data = params.data;
+                if (!data || typeof data.futChange !== "number") return false;
+                if (data.side === "Buy Futures / Sell Equity") {
+                  return data.futChange > 0;
+                }
+                if (data.side === "Sell Futures / Buy Equity") {
+                  return data.futChange < 0;
+                }
+                return false;
+              },
+            },
           },
-        },
+          {
+            field: "eqPx",
+            headerName: "Equity",
+            minWidth: 120,
+            cellRenderer: PriceDeltaCell,
+            cellRendererParams: { deltaField: "eqChange", formatter: priceFormatter },
+            cellClassRules: {
+              "bg-red-500/10": (params) => {
+                const data = params.data;
+                if (!data || typeof data.eqChange !== "number") return false;
+                if (data.side === "Buy Futures / Sell Equity") {
+                  return data.eqChange > 0;
+                }
+                if (data.side === "Sell Futures / Buy Equity") {
+                  return data.eqChange < 0;
+                }
+                return false;
+              },
+              "bg-emerald-500/10": (params) => {
+                const data = params.data;
+                if (!data || typeof data.eqChange !== "number") return false;
+                if (data.side === "Buy Futures / Sell Equity") {
+                  return data.eqChange < 0;
+                }
+                if (data.side === "Sell Futures / Buy Equity") {
+                  return data.eqChange > 0;
+                }
+                return false;
+              },
+            },
+          },
+          {
+            field: "spread",
+            headerName: "Spread",
+            minWidth: 120,
+            cellRenderer: PriceDeltaCell,
+            cellRendererParams: { deltaField: "spreadChange", formatter: decimalFormatter, precision: 2 },
+            cellClassRules: {
+              "bg-red-500/10": (params) => {
+                const data = params.data;
+                if (!data || typeof data.spreadChange !== "number") return false;
+                if (Math.abs(data.spread - data.targetSpread) >= data.tolerance) {
+                  return true;
+                }
+                const gap = data.targetSpread - data.spread;
+                if (gap === 0) return false;
+                return gap > 0 ? data.spreadChange < 0 : data.spreadChange > 0;
+              },
+              "bg-emerald-500/10": (params) => {
+                const data = params.data;
+                if (!data || typeof data.spreadChange !== "number") return false;
+                const gap = data.targetSpread - data.spread;
+                if (gap === 0) return false;
+                return gap > 0 ? data.spreadChange > 0 : data.spreadChange < 0;
+              },
+            },
+          },
+        ],
       },
       {
         field: "targetSpread",
@@ -1356,6 +1658,37 @@ export default function EquityHedgeCockpit() {
               handleStrategyPatch(params.data.id, "latencyThreshold", normalized);
               return true;
             },
+          },
+        ],
+      },
+      {
+        headerName: "Orders",
+        marryChildren: true,
+        children: [
+          {
+            field: "orderStatus",
+            headerName: "Status",
+            minWidth: 140,
+            cellRenderer: OrderStatusCell,
+            sortable: false,
+            filter: false,
+          },
+          {
+            field: "fillProgress",
+            headerName: "Fill %",
+            minWidth: 150,
+            valueGetter: (params) => params.data?.fillProgress ?? 0,
+            cellRenderer: FillProgressCell,
+            filter: false,
+          },
+          {
+            field: "lastOrderUpdate",
+            headerName: "Since Change",
+            minWidth: 130,
+            cellRenderer: TimeSinceCell,
+            comparator: (a: number | null | undefined, b: number | null | undefined) =>
+              (a ?? 0) - (b ?? 0),
+            filter: false,
           },
         ],
       },
@@ -1539,8 +1872,11 @@ export default function EquityHedgeCockpit() {
         name: template.name,
         side: template.side,
         futPx: template.side === "Buy Futures / Sell Equity" ? 0 : 0,
+        futChange: 0,
         eqPx: 0,
+        eqChange: 0,
         spread: 0,
+        spreadChange: 0,
         targetSpread: 0,
         entry: source?.entry ?? 0,
         exit: source?.exit ?? 0,
@@ -1551,6 +1887,9 @@ export default function EquityHedgeCockpit() {
         upl: 0,
         latMs: 0,
         status: "ACTIVE",
+        orderStatus: "Idle",
+        fillProgress: 0,
+        lastOrderUpdate: Date.now(),
         lastChangeAt: new Date().toLocaleTimeString(),
         tolerance: 0.5,
         latencyThreshold: 100,
