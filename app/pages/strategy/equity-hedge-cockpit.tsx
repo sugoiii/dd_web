@@ -1,13 +1,24 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  type KeyboardEvent,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { MetaDescriptor } from "react-router";
 import type {
   CellClassParams,
   CellValueChangedEvent,
   ColDef,
+  ICellEditorParams,
   GetRowIdParams,
   GridReadyEvent,
   ICellRendererParams,
+  ValueParserParams,
   ValueFormatterParams,
+  ValueSetterParams,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import {
@@ -113,6 +124,295 @@ type DrawerFilter = {
   onlySelected: boolean;
   ticker?: string;
 };
+
+type EditableNumericField =
+  | "entry"
+  | "exit"
+  | "maxQty"
+  | "hedgeRatio"
+  | "tolerance"
+  | "latencyThreshold";
+
+type EditableNumberCellParams = ICellEditorParams<StrategyRow, number> & {
+  step?: number;
+  min?: number;
+  max?: number;
+  precision?: number;
+};
+
+type EditableNumberCellHandle = {
+  getValue: () => number;
+  afterGuiAttached?: () => void;
+};
+
+type SideCellEditorParams = ICellEditorParams<StrategyRow, StrategySide> & {
+  descriptions?: Record<StrategySide, string>;
+};
+
+type SideCellEditorHandle = {
+  getValue: () => StrategySide;
+  afterGuiAttached?: () => void;
+};
+
+const SIDE_OPTIONS: readonly {
+  value: StrategySide;
+  label: string;
+  description: string;
+  icon: typeof ArrowRightLeft;
+  accent: string;
+}[] = [
+  {
+    value: "Buy Futures / Sell Equity",
+    label: "Buy Fut / Sell Eq",
+    description: "Long index future, short underlying cash leg.",
+    icon: ArrowRightLeft,
+    accent: "text-emerald-500",
+  },
+  {
+    value: "Sell Futures / Buy Equity",
+    label: "Sell Fut / Buy Eq",
+    description: "Short index future, long underlying cash leg.",
+    icon: ArrowRightLeft,
+    accent: "text-red-500",
+  },
+  {
+    value: "Idle",
+    label: "Idle / Monitor",
+    description: "No live orders – monitor only.",
+    icon: PauseCircle,
+    accent: "text-muted-foreground",
+  },
+];
+
+const EditableNumberCell = forwardRef<EditableNumberCellHandle, EditableNumberCellParams>(
+  ({ value, step = 1, min, max, precision, stopEditing }, ref) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [displayValue, setDisplayValue] = useState(() =>
+      value != null && !Number.isNaN(value) ? String(value) : "",
+    );
+
+    const clampValue = useCallback(
+      (num: number) => {
+        let next = num;
+        if (typeof min === "number") {
+          next = Math.max(min, next);
+        }
+        if (typeof max === "number") {
+          next = Math.min(max, next);
+        }
+        if (typeof precision === "number") {
+          const factor = 10 ** precision;
+          next = Math.round(next * factor) / factor;
+        }
+        return next;
+      },
+      [max, min, precision],
+    );
+
+    const fallbackValue = useMemo(() => {
+      if (typeof value === "number" && !Number.isNaN(value)) {
+        return clampValue(value);
+      }
+      if (typeof min === "number") {
+        return min;
+      }
+      return 0;
+    }, [clampValue, min, value]);
+
+    const toDisplayString = useCallback(
+      (num: number) => {
+        const clamped = clampValue(num);
+        if (typeof precision === "number") {
+          return clamped.toFixed(precision);
+        }
+        return String(clamped);
+      },
+      [clampValue, precision],
+    );
+
+    const parseInput = useCallback(
+      (raw: string) => {
+        const trimmed = raw.trim();
+        if (!trimmed.length) {
+          return fallbackValue;
+        }
+        const parsed = Number(trimmed);
+        if (!Number.isFinite(parsed)) {
+          return fallbackValue;
+        }
+        return clampValue(parsed);
+      },
+      [clampValue, fallbackValue],
+    );
+
+    const adjustValue = useCallback(
+      (direction: 1 | -1, multiplier: number) => {
+        const current = Number(displayValue);
+        const base = Number.isFinite(current) ? current : fallbackValue;
+        const delta = step * multiplier * direction;
+        setDisplayValue(toDisplayString(base + delta));
+      },
+      [displayValue, fallbackValue, step, toDisplayString],
+    );
+
+    const handleKeyDown = useCallback(
+      (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+          event.preventDefault();
+          const multiplier = event.shiftKey ? 10 : 1;
+          adjustValue(event.key === "ArrowUp" ? 1 : -1, multiplier);
+        }
+        if (event.key === "Enter") {
+          event.preventDefault();
+          stopEditing?.();
+        }
+        if (event.key === "Escape") {
+          stopEditing?.();
+        }
+      },
+      [adjustValue, stopEditing],
+    );
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        getValue: () => parseInput(displayValue),
+        afterGuiAttached: () => {
+          requestAnimationFrame(() => {
+            inputRef.current?.focus();
+            inputRef.current?.select();
+          });
+        },
+      }),
+      [displayValue, parseInput],
+    );
+
+    return (
+      <Input
+        ref={inputRef}
+        value={displayValue}
+        onChange={(event) => setDisplayValue(event.target.value)}
+        onKeyDown={handleKeyDown}
+        className="h-8"
+        inputMode="decimal"
+        autoFocus
+      />
+    );
+  },
+);
+
+const SideCellEditor = forwardRef<SideCellEditorHandle, SideCellEditorParams>(
+  ({ value, stopEditing, descriptions }, ref) => {
+    const [open, setOpen] = useState(false);
+    const [selected, setSelected] = useState<StrategySide>(value ?? "Idle");
+    const triggerRef = useRef<HTMLButtonElement>(null);
+
+    const getOption = useCallback(
+      (side: StrategySide) => SIDE_OPTIONS.find((option) => option.value === side) ?? SIDE_OPTIONS[0],
+      [],
+    );
+
+    const handleSelect = useCallback(
+      (side: StrategySide) => {
+        setSelected(side);
+        setOpen(false);
+        requestAnimationFrame(() => stopEditing?.());
+      },
+      [stopEditing],
+    );
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        getValue: () => selected,
+        afterGuiAttached: () => {
+          requestAnimationFrame(() => {
+            setOpen(true);
+          });
+        },
+      }),
+      [selected],
+    );
+
+    const activeOption = getOption(selected);
+    const ActiveIcon = activeOption.icon;
+
+    return (
+      <Popover
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) {
+            requestAnimationFrame(() => stopEditing?.());
+          }
+        }}
+      >
+        <PopoverTrigger asChild>
+          <button
+            ref={triggerRef}
+            type="button"
+            className={cn(
+              "flex h-8 w-full items-center justify-between rounded-md border bg-background px-2 text-left text-xs font-medium",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <ActiveIcon className={cn("size-4", activeOption.accent)} />
+              <span>{activeOption.value}</span>
+            </span>
+            <ChevronDown className="size-3.5 opacity-60" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-0" align="start" sideOffset={4}>
+          <Command>
+            <CommandInput placeholder="Search trading side…" autoFocus />
+            <CommandList>
+              <CommandGroup heading="Playbooks">
+                {SIDE_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const description = descriptions?.[option.value] ?? option.description;
+                  return (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={() => handleSelect(option.value)}
+                      className="items-start"
+                    >
+                      <div className="flex flex-col gap-1 text-left">
+                        <span className="flex items-center gap-2 text-xs font-semibold">
+                          <Icon className={cn("size-4", option.accent)} />
+                          {option.value}
+                          {selected === option.value ? (
+                            <Badge variant="secondary" className="ml-auto text-[10px]">
+                              Active
+                            </Badge>
+                          ) : null}
+                        </span>
+                        <span className="pl-6 text-[11px] text-muted-foreground">{description}</span>
+                      </div>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  },
+);
+
+const EDITABLE_NUMERIC_FIELDS: readonly EditableNumericField[] = [
+  "entry",
+  "exit",
+  "maxQty",
+  "hedgeRatio",
+  "tolerance",
+  "latencyThreshold",
+];
+
+const isEditableNumericField = (field: string): field is EditableNumericField =>
+  (EDITABLE_NUMERIC_FIELDS as readonly string[]).includes(field);
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -607,6 +907,8 @@ export default function EquityHedgeCockpit() {
         exit: "",
         maxQty: "",
         hedgeRatio: "",
+        tolerance: "",
+        latencyThreshold: "",
         posEq: totalSummary.posEq,
         posFutLots: totalSummary.posFut,
         upl: totalSummary.upl,
@@ -640,12 +942,109 @@ export default function EquityHedgeCockpit() {
     [],
   );
 
-  const handleCellValueChanged = useCallback(
-    (event: CellValueChangedEvent<StrategyRow>) => {
-      if (!event.data) return;
-      setStrategies((prev) => prev.map((row) => (row.id === event.data.id ? { ...event.data } : row)));
+  const normalizeStrategyValue = useCallback(
+    (field: EditableNumericField, rawValue: unknown, currentValue: number) => {
+      const parsed =
+        typeof rawValue === "number" && Number.isFinite(rawValue)
+          ? rawValue
+          : typeof rawValue === "string"
+            ? Number(rawValue)
+            : Number.NaN;
+
+      if (!Number.isFinite(parsed)) {
+        return currentValue;
+      }
+
+      let next = parsed;
+
+      switch (field) {
+        case "maxQty": {
+          next = Math.round(next);
+          next = Math.max(0, Math.min(next, 10000));
+          break;
+        }
+        case "hedgeRatio": {
+          next = Math.max(0, Math.min(next, 5));
+          next = Number(next.toFixed(2));
+          break;
+        }
+        case "tolerance": {
+          next = Math.max(0, Math.min(next, 5));
+          next = Number(next.toFixed(2));
+          break;
+        }
+        case "latencyThreshold": {
+          next = Math.round(next);
+          next = Math.max(0, Math.min(next, 2000));
+          break;
+        }
+        case "entry":
+        case "exit": {
+          next = Number(next.toFixed(2));
+          break;
+        }
+        default:
+          break;
+      }
+
+      return next;
     },
     [],
+  );
+
+  const handleStrategyPatch = useCallback(
+    (id: string, field: EditableNumericField, normalizedValue: number) => {
+      setStrategies((prev) =>
+        prev.map((row) => {
+          if (row.id !== id) {
+            return row;
+          }
+          if (row[field] === normalizedValue) {
+            return row;
+          }
+          return {
+            ...row,
+            [field]: normalizedValue,
+            lastChangeAt: new Date().toLocaleTimeString(),
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const handleCellValueChanged = useCallback(
+    (event: CellValueChangedEvent<StrategyRow>) => {
+      if (!event.data || !event.colDef.field) {
+        return;
+      }
+
+      const field = event.colDef.field as keyof StrategyRow;
+
+      if (field === "side") {
+        return;
+      }
+
+      if (isEditableNumericField(field as string)) {
+        const numericField = field as EditableNumericField;
+        const normalized = normalizeStrategyValue(numericField, event.newValue, event.data[numericField]);
+        handleStrategyPatch(event.data.id, numericField, normalized);
+        return;
+      }
+
+      setStrategies((prev) =>
+        prev.map((row) =>
+          row.id === event.data!.id
+            ? {
+                ...row,
+                [field]: event.newValue as StrategyRow[keyof StrategyRow],
+                lastChangeAt: new Date().toLocaleTimeString(),
+              }
+            : row,
+        ),
+      );
+    },
+    [handleStrategyPatch, normalizeStrategyValue],
   );
 
   const handleSelectionChanged = useCallback(() => {
@@ -729,6 +1128,20 @@ export default function EquityHedgeCockpit() {
     );
   }, []);
 
+  const handleSideChange = useCallback((id: string, nextSide: StrategySide) => {
+    setStrategies((prev) =>
+      prev.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              side: nextSide,
+              lastChangeAt: new Date().toLocaleTimeString(),
+            }
+          : row,
+      ),
+    );
+  }, []);
+
   const columnDefs = useMemo<ColDef<StrategyRow>[]>(
     () => [
       {
@@ -753,9 +1166,17 @@ export default function EquityHedgeCockpit() {
         minWidth: 150,
         editable: true,
         cellClassRules: sideClassRules,
-        cellEditor: "agSelectCellEditor",
-        cellEditorParams: {
-          values: ["Buy Futures / Sell Equity", "Sell Futures / Buy Equity", "Idle"],
+        cellEditor: SideCellEditor,
+        cellEditorPopup: true,
+        valueSetter: (params: ValueSetterParams<StrategyRow, StrategySide>) => {
+          if (!params.data) return false;
+          const next = params.newValue as StrategySide | null | undefined;
+          if (!next || params.data.side === next) {
+            return false;
+          }
+          params.data.side = next;
+          handleSideChange(params.data.id, next);
+          return true;
         },
       },
       {
@@ -795,28 +1216,148 @@ export default function EquityHedgeCockpit() {
         headerName: "Entry",
         minWidth: 92,
         editable: true,
+        cellEditor: EditableNumberCell,
+        cellEditorParams: { step: 0.05, precision: 2 },
         valueFormatter: (params) => (params.value != null ? decimalFormatter.format(params.value) : ""),
+        valueParser: (params: ValueParserParams<StrategyRow>) => {
+          const parsed = Number(params.newValue);
+          return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
+        },
+        valueSetter: (params: ValueSetterParams<StrategyRow, number>) => {
+          if (!params.data) return false;
+          const normalized = normalizeStrategyValue("entry", params.newValue, params.data.entry);
+          if (normalized === params.data.entry) {
+            return false;
+          }
+          params.data.entry = normalized;
+          handleStrategyPatch(params.data.id, "entry", normalized);
+          return true;
+        },
       },
       {
         field: "exit",
         headerName: "Exit",
         minWidth: 92,
         editable: true,
+        cellEditor: EditableNumberCell,
+        cellEditorParams: { step: 0.05, precision: 2 },
         valueFormatter: (params) => (params.value != null ? decimalFormatter.format(params.value) : ""),
+        valueParser: (params: ValueParserParams<StrategyRow>) => {
+          const parsed = Number(params.newValue);
+          return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
+        },
+        valueSetter: (params: ValueSetterParams<StrategyRow, number>) => {
+          if (!params.data) return false;
+          const normalized = normalizeStrategyValue("exit", params.newValue, params.data.exit);
+          if (normalized === params.data.exit) {
+            return false;
+          }
+          params.data.exit = normalized;
+          handleStrategyPatch(params.data.id, "exit", normalized);
+          return true;
+        },
       },
       {
         field: "maxQty",
         headerName: "Max/Ord",
         minWidth: 96,
         editable: true,
+        cellEditor: EditableNumberCell,
+        cellEditorParams: { step: 50, min: 0, max: 10000, precision: 0 },
         valueFormatter: (params) => (params.value != null ? numberFormatter.format(params.value) : ""),
+        valueParser: (params: ValueParserParams<StrategyRow>) => {
+          const parsed = Number(params.newValue);
+          return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
+        },
+        valueSetter: (params: ValueSetterParams<StrategyRow, number>) => {
+          if (!params.data) return false;
+          const normalized = normalizeStrategyValue("maxQty", params.newValue, params.data.maxQty);
+          if (normalized === params.data.maxQty) {
+            return false;
+          }
+          params.data.maxQty = normalized;
+          handleStrategyPatch(params.data.id, "maxQty", normalized);
+          return true;
+        },
       },
       {
         field: "hedgeRatio",
         headerName: "HedgeR",
         minWidth: 92,
         editable: true,
+        cellEditor: EditableNumberCell,
+        cellEditorParams: { step: 0.01, min: 0, max: 5, precision: 2 },
         valueFormatter: (params) => (params.value != null ? params.value.toFixed(2) : ""),
+        valueParser: (params: ValueParserParams<StrategyRow>) => {
+          const parsed = Number(params.newValue);
+          return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
+        },
+        valueSetter: (params: ValueSetterParams<StrategyRow, number>) => {
+          if (!params.data) return false;
+          const normalized = normalizeStrategyValue("hedgeRatio", params.newValue, params.data.hedgeRatio);
+          if (normalized === params.data.hedgeRatio) {
+            return false;
+          }
+          params.data.hedgeRatio = normalized;
+          handleStrategyPatch(params.data.id, "hedgeRatio", normalized);
+          return true;
+        },
+      },
+      {
+        headerName: "Risk",
+        marryChildren: true,
+        children: [
+          {
+            field: "tolerance",
+            headerName: "Tolerance",
+            minWidth: 110,
+            editable: true,
+            cellEditor: EditableNumberCell,
+            cellEditorParams: { step: 0.05, min: 0, max: 5, precision: 2 },
+            valueFormatter: (params) => (params.value != null ? params.value.toFixed(2) : ""),
+            valueParser: (params: ValueParserParams<StrategyRow>) => {
+              const parsed = Number(params.newValue);
+              return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
+            },
+            valueSetter: (params: ValueSetterParams<StrategyRow, number>) => {
+              if (!params.data) return false;
+              const normalized = normalizeStrategyValue("tolerance", params.newValue, params.data.tolerance);
+              if (normalized === params.data.tolerance) {
+                return false;
+              }
+              params.data.tolerance = normalized;
+              handleStrategyPatch(params.data.id, "tolerance", normalized);
+              return true;
+            },
+          },
+          {
+            field: "latencyThreshold",
+            headerName: "Latency",
+            minWidth: 110,
+            editable: true,
+            cellEditor: EditableNumberCell,
+            cellEditorParams: { step: 5, min: 0, max: 2000, precision: 0 },
+            valueFormatter: (params) => (params.value != null ? params.value.toFixed(0) : ""),
+            valueParser: (params: ValueParserParams<StrategyRow>) => {
+              const parsed = Number(params.newValue);
+              return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
+            },
+            valueSetter: (params: ValueSetterParams<StrategyRow, number>) => {
+              if (!params.data) return false;
+              const normalized = normalizeStrategyValue(
+                "latencyThreshold",
+                params.newValue,
+                params.data.latencyThreshold,
+              );
+              if (normalized === params.data.latencyThreshold) {
+                return false;
+              }
+              params.data.latencyThreshold = normalized;
+              handleStrategyPatch(params.data.id, "latencyThreshold", normalized);
+              return true;
+            },
+          },
+        ],
       },
       {
         field: "posEq",
@@ -912,7 +1453,16 @@ export default function EquityHedgeCockpit() {
         cellClass: "font-sans",
       },
     ],
-    [formatSigned, handleFlatten, handleReverse, handleToggleHalt, sideClassRules],
+    [
+      formatSigned,
+      handleFlatten,
+      handleReverse,
+      handleSideChange,
+      handleStrategyPatch,
+      handleToggleHalt,
+      normalizeStrategyValue,
+      sideClassRules,
+    ],
   );
 
   const familySummary = useMemo(() => {
