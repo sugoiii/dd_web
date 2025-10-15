@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format, startOfDay } from "date-fns";
 import type { ColDef, RowClickedEvent } from "ag-grid-community";
-import { ModuleRegistry, AllEnterpriseModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import { CalendarDays } from "lucide-react";
 
@@ -20,8 +19,6 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { cn } from "~/lib/utils";
-
-ModuleRegistry.registerModules([AllEnterpriseModule]);
 
 const ALL_TEAMS_VALUE = "ALL";
 const ALL_FUNDS_VALUE = "ALL_FUNDS";

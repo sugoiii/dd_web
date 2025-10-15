@@ -5,7 +5,6 @@ import {
   type ICellRendererParams,
   type RowClickedEvent,
 } from "ag-grid-community";
-import { ModuleRegistry, AllEnterpriseModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import {
   ArrowDownRight,
@@ -38,8 +37,6 @@ import { cn } from "~/lib/utils";
 
 import "ag-grid-enterprise/styles/ag-grid.css";
 import "ag-grid-enterprise/styles/ag-theme-quartz.css";
-
-ModuleRegistry.registerModules([AllEnterpriseModule]);
 
 type BasisRow = {
   symbol: string;

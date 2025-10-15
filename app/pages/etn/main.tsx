@@ -1,13 +1,10 @@
 import { useState } from "react";
 import type { ColDef } from "ag-grid-enterprise";
-import { ModuleRegistry, AllEnterpriseModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 
 import { PageTemplate } from "~/components/page-template";
 import { SummaryCard } from "~/components/summary-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-
-ModuleRegistry.registerModules([AllEnterpriseModule]);
 
 interface IRow {
   name: string;
