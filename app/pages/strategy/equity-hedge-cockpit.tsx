@@ -11,14 +11,17 @@ import {
 import type { MetaDescriptor } from "react-router";
 import type {
   CellClassParams,
+  CellClassRules,
   CellValueChangedEvent,
   ColDef,
-  ICellEditorParams,
+  ColGroupDef,
   GetRowIdParams,
   GridReadyEvent,
+  ICellEditorParams,
   ICellRendererParams,
-  ValueParserParams,
   ValueFormatterParams,
+  ValueGetterParams,
+  ValueParserParams,
   ValueSetterParams,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
@@ -1376,21 +1379,22 @@ export default function EquityHedgeCockpit() {
     );
   }, []);
 
-  const columnDefs = useMemo<ColDef<StrategyRow>[]>(
+  const columnDefs = useMemo<(ColDef<StrategyRow> | ColGroupDef<StrategyRow>)[]>(
     () => [
       {
         field: "ticker",
         headerName: "Underlying",
         pinned: "left",
         minWidth: 140,
-        cellRenderer: (params) => (
+        cellRenderer: (params: ICellRendererParams<StrategyRow>) => (
           <div className="flex flex-col">
             <span className="font-semibold text-foreground">{params.data?.ticker}</span>
             <span className="font-sans text-[11px] text-muted-foreground">{params.data?.name}</span>
           </div>
         ),
         cellClass: "font-sans",
-        valueGetter: (params) => params.data?.ticker,
+        valueGetter: (params: ValueGetterParams<StrategyRow, string>) =>
+          params.data?.ticker ?? "",
         sortable: true,
         filter: "agTextColumnFilter",
       },
@@ -1423,30 +1427,30 @@ export default function EquityHedgeCockpit() {
             minWidth: 120,
             cellRenderer: PriceDeltaCell,
             cellRendererParams: { deltaField: "futChange", formatter: priceFormatter },
-            cellClassRules: {
-              "bg-red-500/10": (params) => {
-                const data = params.data;
-                if (!data || typeof data.futChange !== "number") return false;
-                if (data.side === "Buy Futures / Sell Equity") {
-                  return data.futChange < 0;
-                }
-                if (data.side === "Sell Futures / Buy Equity") {
-                  return data.futChange > 0;
-                }
-                return false;
-              },
-              "bg-emerald-500/10": (params) => {
-                const data = params.data;
-                if (!data || typeof data.futChange !== "number") return false;
-                if (data.side === "Buy Futures / Sell Equity") {
-                  return data.futChange > 0;
-                }
-                if (data.side === "Sell Futures / Buy Equity") {
-                  return data.futChange < 0;
-                }
-                return false;
-              },
-            },
+        cellClassRules: {
+          "bg-red-500/10": (params: CellClassParams<StrategyRow>) => {
+            const data = params.data;
+            if (!data || typeof data.futChange !== "number") return false;
+            if (data.side === "Buy Futures / Sell Equity") {
+              return data.futChange < 0;
+            }
+            if (data.side === "Sell Futures / Buy Equity") {
+              return data.futChange > 0;
+            }
+            return false;
+          },
+          "bg-emerald-500/10": (params: CellClassParams<StrategyRow>) => {
+            const data = params.data;
+            if (!data || typeof data.futChange !== "number") return false;
+            if (data.side === "Buy Futures / Sell Equity") {
+              return data.futChange > 0;
+            }
+            if (data.side === "Sell Futures / Buy Equity") {
+              return data.futChange < 0;
+            }
+            return false;
+          },
+        } as CellClassRules<StrategyRow>,
           },
           {
             field: "eqPx",
@@ -1454,30 +1458,30 @@ export default function EquityHedgeCockpit() {
             minWidth: 120,
             cellRenderer: PriceDeltaCell,
             cellRendererParams: { deltaField: "eqChange", formatter: priceFormatter },
-            cellClassRules: {
-              "bg-red-500/10": (params) => {
-                const data = params.data;
-                if (!data || typeof data.eqChange !== "number") return false;
-                if (data.side === "Buy Futures / Sell Equity") {
-                  return data.eqChange > 0;
-                }
-                if (data.side === "Sell Futures / Buy Equity") {
-                  return data.eqChange < 0;
-                }
-                return false;
-              },
-              "bg-emerald-500/10": (params) => {
-                const data = params.data;
-                if (!data || typeof data.eqChange !== "number") return false;
-                if (data.side === "Buy Futures / Sell Equity") {
-                  return data.eqChange < 0;
-                }
-                if (data.side === "Sell Futures / Buy Equity") {
-                  return data.eqChange > 0;
-                }
-                return false;
-              },
-            },
+        cellClassRules: {
+          "bg-red-500/10": (params: CellClassParams<StrategyRow>) => {
+            const data = params.data;
+            if (!data || typeof data.eqChange !== "number") return false;
+            if (data.side === "Buy Futures / Sell Equity") {
+              return data.eqChange > 0;
+            }
+            if (data.side === "Sell Futures / Buy Equity") {
+              return data.eqChange < 0;
+            }
+            return false;
+          },
+          "bg-emerald-500/10": (params: CellClassParams<StrategyRow>) => {
+            const data = params.data;
+            if (!data || typeof data.eqChange !== "number") return false;
+            if (data.side === "Buy Futures / Sell Equity") {
+              return data.eqChange < 0;
+            }
+            if (data.side === "Sell Futures / Buy Equity") {
+              return data.eqChange > 0;
+            }
+            return false;
+          },
+        } as CellClassRules<StrategyRow>,
           },
           {
             field: "spread",
@@ -1485,25 +1489,25 @@ export default function EquityHedgeCockpit() {
             minWidth: 120,
             cellRenderer: PriceDeltaCell,
             cellRendererParams: { deltaField: "spreadChange", formatter: decimalFormatter, precision: 2 },
-            cellClassRules: {
-              "bg-red-500/10": (params) => {
-                const data = params.data;
-                if (!data || typeof data.spreadChange !== "number") return false;
-                if (Math.abs(data.spread - data.targetSpread) >= data.tolerance) {
-                  return true;
-                }
-                const gap = data.targetSpread - data.spread;
-                if (gap === 0) return false;
-                return gap > 0 ? data.spreadChange < 0 : data.spreadChange > 0;
-              },
-              "bg-emerald-500/10": (params) => {
-                const data = params.data;
-                if (!data || typeof data.spreadChange !== "number") return false;
-                const gap = data.targetSpread - data.spread;
-                if (gap === 0) return false;
-                return gap > 0 ? data.spreadChange > 0 : data.spreadChange < 0;
-              },
-            },
+        cellClassRules: {
+          "bg-red-500/10": (params: CellClassParams<StrategyRow>) => {
+            const data = params.data;
+            if (!data || typeof data.spreadChange !== "number") return false;
+            if (Math.abs(data.spread - data.targetSpread) >= data.tolerance) {
+              return true;
+            }
+            const gap = data.targetSpread - data.spread;
+            if (gap === 0) return false;
+            return gap > 0 ? data.spreadChange < 0 : data.spreadChange > 0;
+          },
+          "bg-emerald-500/10": (params: CellClassParams<StrategyRow>) => {
+            const data = params.data;
+            if (!data || typeof data.spreadChange !== "number") return false;
+            const gap = data.targetSpread - data.spread;
+            if (gap === 0) return false;
+            return gap > 0 ? data.spreadChange > 0 : data.spreadChange < 0;
+          },
+        } as CellClassRules<StrategyRow>,
           },
         ],
       },
@@ -1511,7 +1515,8 @@ export default function EquityHedgeCockpit() {
         field: "targetSpread",
         headerName: "Target",
         minWidth: 92,
-        valueFormatter: (params) => (params.value != null ? decimalFormatter.format(params.value) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? decimalFormatter.format(params.value) : "",
       },
       {
         field: "entry",
@@ -1520,7 +1525,8 @@ export default function EquityHedgeCockpit() {
         editable: true,
         cellEditor: EditableNumberCell,
         cellEditorParams: { step: 0.05, precision: 2 },
-        valueFormatter: (params) => (params.value != null ? decimalFormatter.format(params.value) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? decimalFormatter.format(params.value) : "",
         valueParser: (params: ValueParserParams<StrategyRow>) => {
           const parsed = Number(params.newValue);
           return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
@@ -1543,7 +1549,8 @@ export default function EquityHedgeCockpit() {
         editable: true,
         cellEditor: EditableNumberCell,
         cellEditorParams: { step: 0.05, precision: 2 },
-        valueFormatter: (params) => (params.value != null ? decimalFormatter.format(params.value) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? decimalFormatter.format(params.value) : "",
         valueParser: (params: ValueParserParams<StrategyRow>) => {
           const parsed = Number(params.newValue);
           return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
@@ -1566,7 +1573,8 @@ export default function EquityHedgeCockpit() {
         editable: true,
         cellEditor: EditableNumberCell,
         cellEditorParams: { step: 50, min: 0, max: 10000, precision: 0 },
-        valueFormatter: (params) => (params.value != null ? numberFormatter.format(params.value) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? numberFormatter.format(params.value) : "",
         valueParser: (params: ValueParserParams<StrategyRow>) => {
           const parsed = Number(params.newValue);
           return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
@@ -1589,7 +1597,8 @@ export default function EquityHedgeCockpit() {
         editable: true,
         cellEditor: EditableNumberCell,
         cellEditorParams: { step: 0.01, min: 0, max: 5, precision: 2 },
-        valueFormatter: (params) => (params.value != null ? params.value.toFixed(2) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? params.value.toFixed(2) : "",
         valueParser: (params: ValueParserParams<StrategyRow>) => {
           const parsed = Number(params.newValue);
           return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
@@ -1616,7 +1625,8 @@ export default function EquityHedgeCockpit() {
             editable: true,
             cellEditor: EditableNumberCell,
             cellEditorParams: { step: 0.05, min: 0, max: 5, precision: 2 },
-            valueFormatter: (params) => (params.value != null ? params.value.toFixed(2) : ""),
+            valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+              params.value != null ? params.value.toFixed(2) : "",
             valueParser: (params: ValueParserParams<StrategyRow>) => {
               const parsed = Number(params.newValue);
               return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
@@ -1639,7 +1649,8 @@ export default function EquityHedgeCockpit() {
             editable: true,
             cellEditor: EditableNumberCell,
             cellEditorParams: { step: 5, min: 0, max: 2000, precision: 0 },
-            valueFormatter: (params) => (params.value != null ? params.value.toFixed(0) : ""),
+            valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+              params.value != null ? params.value.toFixed(0) : "",
             valueParser: (params: ValueParserParams<StrategyRow>) => {
               const parsed = Number(params.newValue);
               return Number.isFinite(parsed) ? parsed : params.oldValue ?? 0;
@@ -1677,7 +1688,8 @@ export default function EquityHedgeCockpit() {
             field: "fillProgress",
             headerName: "Fill %",
             minWidth: 150,
-            valueGetter: (params) => params.data?.fillProgress ?? 0,
+            valueGetter: (params: ValueGetterParams<StrategyRow, number>) =>
+              params.data?.fillProgress ?? 0,
             cellRenderer: FillProgressCell,
             filter: false,
           },
@@ -1696,42 +1708,48 @@ export default function EquityHedgeCockpit() {
         field: "posEq",
         headerName: "Pos Eq",
         minWidth: 110,
-        valueFormatter: (params) => (params.value != null ? formatSigned(params.value) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? formatSigned(params.value) : "",
       },
       {
         field: "posFutLots",
         headerName: "Pos Fut",
         minWidth: 110,
-        valueFormatter: (params) => (params.value != null ? formatSigned(params.value) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? formatSigned(params.value) : "",
       },
       {
         field: "upl",
         headerName: "UPL",
         minWidth: 120,
-        valueFormatter: (params) => (params.value != null ? currencyFormatter.format(params.value) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? currencyFormatter.format(params.value) : "",
         cellClassRules: {
-          "text-emerald-500": (params) => (params.value ?? 0) >= 0,
-          "text-red-500": (params) => (params.value ?? 0) < 0,
-        },
+          "text-emerald-500": (params: CellClassParams<StrategyRow>) =>
+            (params.value ?? 0) >= 0,
+          "text-red-500": (params: CellClassParams<StrategyRow>) =>
+            (params.value ?? 0) < 0,
+        } as CellClassRules<StrategyRow>,
       },
       {
         field: "latMs",
         headerName: "Lat(ms)",
         minWidth: 96,
-        valueFormatter: (params) => (params.value != null ? params.value.toFixed(0) : ""),
+        valueFormatter: (params: ValueFormatterParams<StrategyRow, number>) =>
+          params.value != null ? params.value.toFixed(0) : "",
         cellClassRules: {
-          "bg-red-500/10": (params) => {
+          "bg-red-500/10": (params: CellClassParams<StrategyRow>) => {
             const data = params.data;
             if (!data || params.value == null) return false;
             return params.value >= data.latencyThreshold;
           },
-        },
+        } as CellClassRules<StrategyRow>,
       },
       {
         field: "status",
         headerName: "Status",
         minWidth: 100,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams<StrategyRow>) => {
           const status = params.data?.status;
           const color =
             status === "ACTIVE"
@@ -1744,7 +1762,7 @@ export default function EquityHedgeCockpit() {
         cellClass: "font-sans",
       },
       {
-        field: "actions",
+        colId: "actions",
         headerName: "Actions",
         minWidth: 200,
         cellRenderer: (params: ICellRendererParams<StrategyRow>) => {
@@ -2262,7 +2280,6 @@ export default function EquityHedgeCockpit() {
               getRowId={getRowId}
               rowSelection="multiple"
               animateRows
-              enableCellChangeFlash
               suppressRowClickSelection={false}
               onCellValueChanged={handleCellValueChanged}
               pinnedTopRowData={pinnedTopRowData}
