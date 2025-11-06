@@ -254,11 +254,11 @@ export const navigationItems: NavItem[] = [
         description: "Realtime monitor for quotes, hedges, and execution flows.",
       },
       {
-        title: "KRX Gold Monitor",
-        key: "market-making-krx-gold",
-        path: "/market-making/krx-gold",
+        title: "Delta-1 Basis Monitor",
+        key: "market-making-delta1-basis",
+        path: "/market-making/delta1-basis",
         icon: LineChart,
-        description: "Premiums, hedging, and flow intelligence for KRX global gold.",
+        description: "Realtime cash-futures alignment, basis edge, and hedge automation control.",
       },
       {
         title: "KRX Basis Trading",
@@ -267,6 +267,13 @@ export const navigationItems: NavItem[] = [
         icon: Workflow,
         description:
           "Equity–futures basis cockpit with unified positions, carry, and execution.",
+      },
+      {
+        title: "KRX Gold Monitor",
+        key: "market-making-krx-gold",
+        path: "/market-making/krx-gold",
+        icon: LineChart,
+        description: "Premiums, hedging, and flow intelligence for KRX global gold.",
       },
     ],
   },
