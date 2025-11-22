@@ -14,24 +14,6 @@ type Pages = {
   "/": {
     params: {};
   };
-  "/management": {
-    params: {};
-  };
-  "/management/cash-control": {
-    params: {};
-  };
-  "/management/fees-adjustments": {
-    params: {};
-  };
-  "/management/middle-level-pnl": {
-    params: {};
-  };
-  "/management/reconciliation-workbench": {
-    params: {};
-  };
-  "/management/valuation-oversight": {
-    params: {};
-  };
   "/etn": {
     params: {};
   };
@@ -44,43 +26,7 @@ type Pages = {
   "/etn/holdings": {
     params: {};
   };
-  "/research/market-overview": {
-    params: {};
-  };
-  "/research/signals": {
-    params: {};
-  };
-  "/operations/risk": {
-    params: {};
-  };
-  "/operations/blotter": {
-    params: {};
-  };
-  "/operations/team": {
-    params: {};
-  };
-  "/operations/preferences": {
-    params: {};
-  };
-  "/options/realtime": {
-    params: {};
-  };
-  "/options/risk-dashboard": {
-    params: {};
-  };
-  "/options/strategy-lab": {
-    params: {};
-  };
-  "/market-making/delta1-basis": {
-    params: {};
-  };
-  "/market-making/krx-basis": {
-    params: {};
-  };
-  "/market-making/krx-gold": {
-    params: {};
-  };
-  "/market-making/monitor": {
+  "/strategy/delta1-basis": {
     params: {};
   };
   "/strategy/realtime-management": {
@@ -94,39 +40,15 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/delta1-basis" | "/market-making/krx-basis" | "/market-making/krx-gold" | "/market-making/monitor" | "/strategy/realtime-management" | "/strategy/equity-hedge-cockpit";
+    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/strategy/delta1-basis" | "/strategy/realtime-management" | "/strategy/equity-hedge-cockpit";
   };
   "./layout.tsx": {
     id: "layout";
-    page: "/" | "/management" | "/management/cash-control" | "/management/fees-adjustments" | "/management/middle-level-pnl" | "/management/reconciliation-workbench" | "/management/valuation-oversight" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/research/market-overview" | "/research/signals" | "/operations/risk" | "/operations/blotter" | "/operations/team" | "/operations/preferences" | "/options/realtime" | "/options/risk-dashboard" | "/options/strategy-lab" | "/market-making/delta1-basis" | "/market-making/krx-basis" | "/market-making/krx-gold" | "/market-making/monitor" | "/strategy/realtime-management" | "/strategy/equity-hedge-cockpit";
+    page: "/" | "/etn" | "/etn/pnl" | "/etn/realtime" | "/etn/holdings" | "/strategy/delta1-basis" | "/strategy/realtime-management" | "/strategy/equity-hedge-cockpit";
   };
   "./pages/main.tsx": {
     id: "pages/main";
     page: "/";
-  };
-  "./pages/management/overview.tsx": {
-    id: "pages/management/overview";
-    page: "/management";
-  };
-  "./pages/management/cash-control.tsx": {
-    id: "pages/management/cash-control";
-    page: "/management/cash-control";
-  };
-  "./pages/management/fees-adjustments.tsx": {
-    id: "pages/management/fees-adjustments";
-    page: "/management/fees-adjustments";
-  };
-  "./pages/management/middle-level-pnl.tsx": {
-    id: "pages/management/middle-level-pnl";
-    page: "/management/middle-level-pnl";
-  };
-  "./pages/management/reconciliation-workbench.tsx": {
-    id: "pages/management/reconciliation-workbench";
-    page: "/management/reconciliation-workbench";
-  };
-  "./pages/management/valuation-oversight.tsx": {
-    id: "pages/management/valuation-oversight";
-    page: "/management/valuation-oversight";
   };
   "./pages/etn/main.tsx": {
     id: "pages/etn/main";
@@ -144,57 +66,9 @@ type RouteFiles = {
     id: "pages/etn/holdings";
     page: "/etn/holdings";
   };
-  "./pages/research/market-overview.tsx": {
-    id: "pages/research/market-overview";
-    page: "/research/market-overview";
-  };
-  "./pages/research/signals.tsx": {
-    id: "pages/research/signals";
-    page: "/research/signals";
-  };
-  "./pages/operations/risk.tsx": {
-    id: "pages/operations/risk";
-    page: "/operations/risk";
-  };
-  "./pages/operations/blotter.tsx": {
-    id: "pages/operations/blotter";
-    page: "/operations/blotter";
-  };
-  "./pages/operations/team.tsx": {
-    id: "pages/operations/team";
-    page: "/operations/team";
-  };
-  "./pages/operations/preferences.tsx": {
-    id: "pages/operations/preferences";
-    page: "/operations/preferences";
-  };
-  "./pages/options/realtime.tsx": {
-    id: "pages/options/realtime";
-    page: "/options/realtime";
-  };
-  "./pages/options/risk-dashboard.tsx": {
-    id: "pages/options/risk-dashboard";
-    page: "/options/risk-dashboard";
-  };
-  "./pages/options/strategy-lab.tsx": {
-    id: "pages/options/strategy-lab";
-    page: "/options/strategy-lab";
-  };
-  "./pages/market-making/delta1-basis-monitor.tsx": {
-    id: "pages/market-making/delta1-basis-monitor";
-    page: "/market-making/delta1-basis";
-  };
-  "./pages/market-making/krx-basis-trading.tsx": {
-    id: "pages/market-making/krx-basis-trading";
-    page: "/market-making/krx-basis";
-  };
-  "./pages/market-making/krx-gold-monitor.tsx": {
-    id: "pages/market-making/krx-gold-monitor";
-    page: "/market-making/krx-gold";
-  };
-  "./pages/market-making/monitor.tsx": {
-    id: "pages/market-making/monitor";
-    page: "/market-making/monitor";
+  "./pages/strategy/delta1-basis-monitor.tsx": {
+    id: "pages/strategy/delta1-basis-monitor";
+    page: "/strategy/delta1-basis";
   };
   "./pages/strategy/realtime-management.tsx": {
     id: "pages/strategy/realtime-management";
@@ -210,29 +84,11 @@ type RouteModules = {
   "root": typeof import("./app/root.tsx");
   "layout": typeof import("./app/./layout.tsx");
   "pages/main": typeof import("./app/./pages/main.tsx");
-  "pages/management/overview": typeof import("./app/./pages/management/overview.tsx");
-  "pages/management/cash-control": typeof import("./app/./pages/management/cash-control.tsx");
-  "pages/management/fees-adjustments": typeof import("./app/./pages/management/fees-adjustments.tsx");
-  "pages/management/middle-level-pnl": typeof import("./app/./pages/management/middle-level-pnl.tsx");
-  "pages/management/reconciliation-workbench": typeof import("./app/./pages/management/reconciliation-workbench.tsx");
-  "pages/management/valuation-oversight": typeof import("./app/./pages/management/valuation-oversight.tsx");
   "pages/etn/main": typeof import("./app/./pages/etn/main.tsx");
   "pages/etn/pnl": typeof import("./app/./pages/etn/pnl.tsx");
   "pages/etn/realtime": typeof import("./app/./pages/etn/realtime.tsx");
   "pages/etn/holdings": typeof import("./app/./pages/etn/holdings.tsx");
-  "pages/research/market-overview": typeof import("./app/./pages/research/market-overview.tsx");
-  "pages/research/signals": typeof import("./app/./pages/research/signals.tsx");
-  "pages/operations/risk": typeof import("./app/./pages/operations/risk.tsx");
-  "pages/operations/blotter": typeof import("./app/./pages/operations/blotter.tsx");
-  "pages/operations/team": typeof import("./app/./pages/operations/team.tsx");
-  "pages/operations/preferences": typeof import("./app/./pages/operations/preferences.tsx");
-  "pages/options/realtime": typeof import("./app/./pages/options/realtime.tsx");
-  "pages/options/risk-dashboard": typeof import("./app/./pages/options/risk-dashboard.tsx");
-  "pages/options/strategy-lab": typeof import("./app/./pages/options/strategy-lab.tsx");
-  "pages/market-making/delta1-basis-monitor": typeof import("./app/./pages/market-making/delta1-basis-monitor.tsx");
-  "pages/market-making/krx-basis-trading": typeof import("./app/./pages/market-making/krx-basis-trading.tsx");
-  "pages/market-making/krx-gold-monitor": typeof import("./app/./pages/market-making/krx-gold-monitor.tsx");
-  "pages/market-making/monitor": typeof import("./app/./pages/market-making/monitor.tsx");
+  "pages/strategy/delta1-basis-monitor": typeof import("./app/./pages/strategy/delta1-basis-monitor.tsx");
   "pages/strategy/realtime-management": typeof import("./app/./pages/strategy/realtime-management.tsx");
   "pages/strategy/equity-hedge-cockpit": typeof import("./app/./pages/strategy/equity-hedge-cockpit.tsx");
 };

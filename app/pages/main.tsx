@@ -61,24 +61,19 @@ const departmentPnls = [
 
 const usefulLinks = [
   {
-    title: "Management Oversight Dashboard",
-    href: "/management",
-    description: "Morning certification view of reconciliation status across desks.",
-  },
-  {
     title: "ETN Intraday P&L",
     href: "/etn/pnl",
     description: "Attribution drill-down for structured product flows and hedges.",
   },
   {
-    title: "Operations Risk Controls",
-    href: "/operations/risk",
-    description: "Limit monitoring, breach workflow, and escalation runbooks.",
+    title: "Strategy Delta-1 Basis Monitor",
+    href: "/strategy/delta1-basis",
+    description: "Cash-futures basis oversight with automation controls.",
   },
   {
-    title: "Options Risk Dashboard",
-    href: "/options/risk-dashboard",
-    description: "Scenario coverage, vega allocation, and live hedging posture.",
+    title: "Strategy Realtime Management",
+    href: "/strategy/realtime-management",
+    description: "Central control tower for systematic allocation workflows.",
   },
 ];
 
