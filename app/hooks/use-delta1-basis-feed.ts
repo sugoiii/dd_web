@@ -1,71 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-export type ConnectionState = "connecting" | "open" | "closed" | "mock"
+import {
+  type BasisMessage,
+  type ConnectionState,
+  type EventPayload,
+  type LegType,
+  type PositionPayload,
+  type QuotePayload,
+  type SocketMessage,
+  type TheoreticalPayload,
+  type TradePayload,
+  openDelta1BasisSocket,
+} from "../api/delta1"
 
-type LegType = "cash" | "futures"
-
-type QuotePayload = {
-  type: "quote"
-  instrumentId: string
-  symbol?: string
-  leg: LegType
-  bid: number | null
-  ask: number | null
-  timestamp: number
-}
-
-type TradePayload = {
-  type: "trade"
-  instrumentId: string
-  symbol?: string
-  leg: LegType
-  price: number
-  size: number
-  side: "buy" | "sell"
-  venue?: string
-  id?: string
-  timestamp: number
-}
-
-type EventPayload = {
-  type: "event"
-  instrumentId: string
-  symbol?: string
-  level: "info" | "warning" | "critical"
-  message: string
-  timestamp: number
-}
-
-type PositionPayload = {
-  type: "position"
-  instrumentId: string
-  symbol?: string
-  book: string
-  strategy: string
-  cashPosition: number
-  futuresPosition: number
-  carry: number
-  autoHedge?: boolean
-  timestamp: number
-}
-
-type TheoreticalPayload = {
-  type: "theoreticalPrice"
-  instrumentId: string
-  symbol?: string
-  theoreticalBasisBps: number
-  theoreticalFutures: number
-  timestamp: number
-}
-
-type SocketMessage =
-  | QuotePayload
-  | TradePayload
-  | EventPayload
-  | PositionPayload
-  | TheoreticalPayload
-
-type BasisMessage = SocketMessage | SocketMessage[]
+export type { ConnectionState } from "../api/delta1"
 
 export interface Delta1BasisSnapshot {
   instrumentId: string
@@ -711,14 +659,13 @@ export function useDelta1BasisFeed(): FeedState {
   }, [clearMockIntervals])
 
   const connectSocket = useCallback(() => {
-    const wsUrl = import.meta.env.VITE_DELTA1_BASIS_WS_URL
-    if (!wsUrl) {
+    const socket = openDelta1BasisSocket()
+    if (!socket) {
       startMockFeed()
       return
     }
     try {
       setConnectionState("connecting")
-      const socket = new WebSocket(wsUrl)
       socketRef.current = socket
 
       socket.onopen = () => {
@@ -841,4 +788,3 @@ export function useDelta1BasisFeed(): FeedState {
     reset,
   }
 }
-
