@@ -1,36 +1,13 @@
 import type { ColDef } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 
+import { type AllocationRow, type LimitRow } from "~/api/common";
 import { PageTemplate } from "~/components/page-template";
+import { Badge } from "~/components/ui/badge";
+import { useCommonSheetRequest } from "~/hooks/request";
 
 import "ag-grid-enterprise/styles/ag-grid.css";
 import "ag-grid-enterprise/styles/ag-theme-quartz.css";
-
-type AllocationRow = {
-  sleeve: string;
-  target: string;
-  actual: string;
-  drift: string;
-};
-
-type LimitRow = {
-  limit: string;
-  value: string;
-  status: string;
-};
-
-const allocationRows: AllocationRow[] = [
-  { sleeve: "Core", target: "45%", actual: "44%", drift: "-1%" },
-  { sleeve: "Tactical", target: "25%", actual: "27%", drift: "+2%" },
-  { sleeve: "Hedge", target: "15%", actual: "14%", drift: "-1%" },
-  { sleeve: "Cash", target: "15%", actual: "15%", drift: "0%" },
-];
-
-const limitRows: LimitRow[] = [
-  { limit: "Gross Notional", value: "$1.2B", status: "Within" },
-  { limit: "Net Delta", value: "$85M", status: "Tight" },
-  { limit: "VaR (99%)", value: "$5.4M", status: "Within" },
-];
 
 const allocationColumns: ColDef<AllocationRow>[] = [
   { field: "sleeve", headerName: "Sleeve" },
@@ -46,10 +23,33 @@ const limitColumns: ColDef<LimitRow>[] = [
 ];
 
 export default function CommonOverview() {
+  const { allocationRows, limitRows, isLoading, error, connectionState } =
+    useCommonSheetRequest();
+
+  const connectionLabel =
+    connectionState === "open"
+      ? "Live"
+      : connectionState === "connecting"
+        ? "Connecting"
+        : connectionState === "mock"
+          ? "Mock"
+          : "Offline";
+
   return (
     <PageTemplate
       title="Common Grid Panels"
       description="Compact, sheet-like overview of allocation drifts and risk limits."
+      actions={
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant={isLoading ? "secondary" : "outline"}>
+            {isLoading ? "Loading" : "Ready"}
+          </Badge>
+          <Badge variant={connectionState === "open" ? "default" : "secondary"}>
+            Stream: {connectionLabel}
+          </Badge>
+          {error ? <Badge variant="destructive">Error</Badge> : null}
+        </div>
+      }
     >
       <div className="grid gap-3 xl:grid-cols-2">
         <section className="space-y-2">
