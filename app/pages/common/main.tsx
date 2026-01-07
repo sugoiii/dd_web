@@ -1,7 +1,10 @@
+import { useMemo, useState } from "react";
 import type { ColDef } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
+import { format, startOfDay } from "date-fns";
 
 import { type AllocationRow, type LimitRow } from "~/api/common";
+import { CommonToolbar } from "~/components/common-toolbar";
 import { PageTemplate } from "~/components/page-template";
 import { Badge } from "~/components/ui/badge";
 import { useCommonSheetRequest } from "~/hooks/request";
@@ -23,8 +26,28 @@ const limitColumns: ColDef<LimitRow>[] = [
 ];
 
 export default function CommonOverview() {
-  const { allocationRows, limitRows, isLoading, error, connectionState } =
-    useCommonSheetRequest();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() =>
+    startOfDay(new Date()),
+  );
+  const [view, setView] = useState("overview");
+  const [scope, setScope] = useState("core");
+  const asOf = useMemo(
+    () => (selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined),
+    [selectedDate],
+  );
+
+  const {
+    allocationRows,
+    limitRows,
+    isLoading,
+    error,
+    connectionState,
+    refresh,
+  } = useCommonSheetRequest({
+    view,
+    scope,
+    asOf,
+  });
 
   const connectionLabel =
     connectionState === "open"
@@ -40,14 +63,26 @@ export default function CommonOverview() {
       title="Common Grid Panels"
       description="Compact, sheet-like overview of allocation drifts and risk limits."
       actions={
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant={isLoading ? "secondary" : "outline"}>
-            {isLoading ? "Loading" : "Ready"}
-          </Badge>
-          <Badge variant={connectionState === "open" ? "default" : "secondary"}>
-            Stream: {connectionLabel}
-          </Badge>
-          {error ? <Badge variant="destructive">Error</Badge> : null}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+          <CommonToolbar
+            selectedDate={selectedDate}
+            view={view}
+            scope={scope}
+            onDateChange={setSelectedDate}
+            onViewChange={setView}
+            onScopeChange={setScope}
+            onRefresh={refresh}
+            isRefreshing={isLoading}
+          />
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <Badge variant={isLoading ? "secondary" : "outline"}>
+              {isLoading ? "Loading" : "Ready"}
+            </Badge>
+            <Badge variant={connectionState === "open" ? "default" : "secondary"}>
+              Stream: {connectionLabel}
+            </Badge>
+            {error ? <Badge variant="destructive">Error</Badge> : null}
+          </div>
         </div>
       }
     >

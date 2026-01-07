@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import {
   demoSheetSnapshot,
@@ -18,6 +18,7 @@ export type CommonSheetRequestState = {
   isLoading: boolean
   error: string | null
   connectionState: SheetConnectionState
+  refresh: () => void
 }
 
 const mergeRows = <T extends Record<string, string>>(
@@ -54,7 +55,7 @@ const parseStreamMessage = (payload: unknown): SheetStreamMessage | null => {
 export const useCommonSheetRequest = (
   params: SheetSnapshotParams & { enableStream?: boolean } = {},
 ): CommonSheetRequestState => {
-  const { enableStream = true, view } = params
+  const { enableStream = true, view, scope, asOf } = params
   const [allocationRows, setAllocationRows] = useState<AllocationRow[]>(
     demoSheetSnapshot.allocations,
   )
@@ -66,6 +67,11 @@ export const useCommonSheetRequest = (
   const [connectionState, setConnectionState] = useState<SheetConnectionState>(
     "closed",
   )
+  const [refreshIndex, setRefreshIndex] = useState(0)
+
+  const refresh = useCallback(() => {
+    setRefreshIndex((current) => current + 1)
+  }, [])
 
   useEffect(() => {
     let isActive = true
@@ -75,7 +81,7 @@ export const useCommonSheetRequest = (
       setError(null)
       try {
         const snapshot = normalizeSnapshot(
-          await fetchSheetSnapshot({ view }),
+          await fetchSheetSnapshot({ view, scope, asOf }),
         )
         if (!isActive) {
           return
@@ -101,7 +107,7 @@ export const useCommonSheetRequest = (
     return () => {
       isActive = false
     }
-  }, [view])
+  }, [asOf, scope, view, refreshIndex])
 
   useEffect(() => {
     if (!enableStream) {
@@ -186,7 +192,8 @@ export const useCommonSheetRequest = (
       isLoading,
       error,
       connectionState,
+      refresh,
     }),
-    [allocationRows, connectionState, error, isLoading, limitRows],
+    [allocationRows, connectionState, error, isLoading, limitRows, refresh],
   )
 }
