@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Activity, BarChart3, Boxes, LayoutDashboard, LineChart, Workflow } from "lucide-react";
+import { Activity, BarChart3, Boxes, LayoutDashboard, LayoutGrid, LineChart, Workflow } from "lucide-react";
 
 export type NavItem = {
   title: string;
@@ -80,6 +80,21 @@ export const navigationItems: NavItem[] = [
         path: "/strategy/equity-hedge-cockpit",
         icon: Workflow,
         description: "High-density management view for pair-hedged equity futures.",
+      },
+    ],
+  },
+  {
+    title: "Common",
+    key: "common",
+    icon: LayoutGrid,
+    description: "Shared layouts and reusable grid-based templates.",
+    children: [
+      {
+        title: "Grid Panels",
+        key: "common-grid-panels",
+        path: "/common",
+        icon: LayoutGrid,
+        description: "Compact sheet-style panels for allocation and limits.",
       },
     ],
   },

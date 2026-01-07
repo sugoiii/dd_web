@@ -15,4 +15,6 @@ const strategyRoutes = [
   route("/strategy/equity-hedge-cockpit", "./pages/strategy/equity-hedge-cockpit.tsx"),
 ];
 
-export default [layout("./layout.tsx", [...dashboardRoutes, ...etnRoutes, ...strategyRoutes])] satisfies RouteConfig;
+const commonRoutes = [route("/common", "./pages/common/main.tsx")];
+
+export default [layout("./layout.tsx", [...dashboardRoutes, ...etnRoutes, ...strategyRoutes, ...commonRoutes])] satisfies RouteConfig;
