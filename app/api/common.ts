@@ -20,6 +20,8 @@ export type SheetSnapshot = {
 
 export type SheetSnapshotParams = {
   view?: string
+  scope?: string
+  asOf?: string
 }
 
 export type SheetConnectionState = "connecting" | "open" | "closed" | "mock"
@@ -65,6 +67,12 @@ export const fetchSheetSnapshot = async (
   const url = new URL("/common/sheet-snapshot", baseUrl)
   if (params.view) {
     url.searchParams.set("view", params.view)
+  }
+  if (params.scope) {
+    url.searchParams.set("scope", params.scope)
+  }
+  if (params.asOf) {
+    url.searchParams.set("asOf", params.asOf)
   }
 
   const response = await fetch(url.toString())
