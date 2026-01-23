@@ -8,8 +8,8 @@ import { strategyRoutes } from "./routes/strategy";
 export default [
   layout("./layout.tsx", [
     ...dashboardRoutes,
-    route("etn", "./layouts/etn-layout.tsx", etnRoutes),
-    route("strategy", "./layouts/strategy-layout.tsx", strategyRoutes),
+    route("etn", "./pages/etn/layout.tsx", etnRoutes),
+    route("strategy", "./pages/strategy/layout.tsx", strategyRoutes),
     ...commonRoutes,
   ]),
 ] satisfies RouteConfig;
