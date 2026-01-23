@@ -1,10 +1,8 @@
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import { ModuleRegistry, AllEnterpriseModule } from "ag-grid-enterprise";
 
 import type { Route } from "./+types/root";
 import "./app.css";
-
-ModuleRegistry.registerModules([AllEnterpriseModule]);
+import "./lib/ag-grid";
 
 export const links: Route.LinksFunction = () => [
   // // { rel: "preconnect", href: "https://fonts.googleapis.com" },
