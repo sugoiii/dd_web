@@ -1,20 +1,15 @@
-import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
+import { type RouteConfig, layout, route } from "@react-router/dev/routes";
 
-const dashboardRoutes = [index("./pages/main.tsx")];
+import { commonRoutes } from "./routes/common";
+import { dashboardRoutes } from "./routes/dashboard";
+import { etnRoutes } from "./routes/etn";
+import { strategyRoutes } from "./routes/strategy";
 
-const etnRoutes = [
-  route("/etn", "./pages/etn/main.tsx"),
-  route("/etn/pnl", "./pages/etn/pnl.tsx"),
-  route("/etn/realtime", "./pages/etn/realtime.tsx"),
-  route("/etn/holdings", "./pages/etn/holdings.tsx"),
-];
-
-const strategyRoutes = [
-  route("/strategy/delta1-basis", "./pages/strategy/delta1-basis-monitor.tsx"),
-  route("/strategy/realtime-management", "./pages/strategy/realtime-management.tsx"),
-  route("/strategy/equity-hedge-cockpit", "./pages/strategy/equity-hedge-cockpit.tsx"),
-];
-
-const commonRoutes = [route("/common", "./pages/common/main.tsx")];
-
-export default [layout("./layout.tsx", [...dashboardRoutes, ...etnRoutes, ...strategyRoutes, ...commonRoutes])] satisfies RouteConfig;
+export default [
+  layout("./layout.tsx", [
+    ...dashboardRoutes,
+    route("etn", "./layouts/etn-layout.tsx", etnRoutes),
+    route("strategy", "./layouts/strategy-layout.tsx", strategyRoutes),
+    ...commonRoutes,
+  ]),
+] satisfies RouteConfig;
