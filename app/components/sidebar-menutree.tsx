@@ -47,7 +47,7 @@ export function SidebarMenuTree({ item }: { item: NavItem }) {
         <SidebarMenuButton asChild isActive={isActive} tooltip={item.description ?? item.title}>
           <Link to={targetPath}>
             {item.icon && <item.icon className="size-4 shrink-0" />}
-            <span className="truncate">{item.title}</span>
+            <span className="truncate group-data-[collapsible=icon]:hidden">{item.title}</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -60,7 +60,7 @@ export function SidebarMenuTree({ item }: { item: NavItem }) {
         <CollapsibleTrigger asChild>
           <SidebarMenuButton isActive={isActive} tooltip={item.description ?? item.title}>
             {item.icon && <item.icon className="size-4 shrink-0" />}
-            <span className="truncate">{item.title}</span>
+            <span className="truncate group-data-[collapsible=icon]:hidden">{item.title}</span>
             <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
