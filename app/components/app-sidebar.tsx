@@ -13,7 +13,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarContent className="space-y-4 px-3 py-5">
-        <div className="rounded-lg border border-sidebar-border/60 bg-background/70 p-4 text-sm text-sidebar-foreground">
+        <div className="rounded-lg border border-sidebar-border/60 bg-background/70 p-4 text-sm text-sidebar-foreground group-data-[collapsible=icon]:hidden">
           <p className="font-semibold text-sidebar-foreground">Welcome back.</p>
           <p className="mt-1 text-[13px] text-sidebar-foreground/70">
             Choose a section to dive into today&apos;s desk updates and workflows.
@@ -21,7 +21,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
         <NavMain items={sidebarItems} />
       </SidebarContent>
-      <SidebarFooter className="mt-auto border-t border-sidebar-border/60 bg-sidebar/90 px-3 py-4">
+      <SidebarFooter className="mt-auto border-t border-sidebar-border/60 bg-sidebar/90 px-3 py-4 group-data-[collapsible=icon]:hidden">
         <div className="flex items-center gap-3 rounded-xl border border-sidebar-border/70 bg-background/70 p-3 shadow-sm">
           <Avatar className="size-11 border border-sidebar-border/70">
             <AvatarImage src="https://i.pravatar.cc/160?img=5" alt="Avery Harper" />
