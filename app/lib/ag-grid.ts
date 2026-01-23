@@ -1,0 +1,42 @@
+import {
+  ClientSideRowModelModule,
+  ColumnAutoSizeModule,
+  CustomEditorModule,
+  ModuleRegistry,
+  NumberFilterModule,
+  _SortModule as SortModule,
+  _HorizontalResizeModule as HorizontalResizeModule,
+  PinnedRowModule,
+  QuickFilterModule,
+  RowSelectionModule,
+  TextFilterModule,
+} from "ag-grid-community";
+import {
+  ColumnMenuModule,
+  ColumnsToolPanelModule,
+  MasterDetailModule,
+  MenuModule,
+  RowGroupingModule,
+  SideBarModule,
+  StatusBarModule,
+} from "ag-grid-enterprise";
+
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  ColumnAutoSizeModule,
+  CustomEditorModule,
+  NumberFilterModule,
+  PinnedRowModule,
+  QuickFilterModule,
+  HorizontalResizeModule,
+  RowSelectionModule,
+  SortModule,
+  TextFilterModule,
+  ColumnMenuModule,
+  ColumnsToolPanelModule,
+  MasterDetailModule,
+  MenuModule,
+  RowGroupingModule,
+  SideBarModule,
+  StatusBarModule,
+]);
