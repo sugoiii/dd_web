@@ -45,23 +45,12 @@ export type SheetStreamMessage =
       limits?: LimitRow[]
     }
 
-export const demoSheetSnapshot: SheetSnapshot = {
-  allocations: [
-    { sleeve: "Core", target: "45%", actual: "44%", drift: "-1%" },
-    { sleeve: "Hedge", target: "15%", actual: "15%", drift: "0%" },
-  ],
-  limits: [
-    { limit: "Gross", value: "$1.2B", status: "Within" },
-    { limit: "VaR", value: "$5.4M", status: "Within" },
-  ],
-}
-
 export const fetchSheetSnapshot = async (
   params: SheetSnapshotParams = {},
 ): Promise<SheetSnapshot> => {
   const baseUrl = getApiBaseUrl()
   if (!baseUrl) {
-    return demoSheetSnapshot
+    throw new Error("API base URL is not configured")
   }
 
   const url = new URL("/common/sheet-snapshot", baseUrl)

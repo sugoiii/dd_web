@@ -10,8 +10,8 @@ import {
   type SocketMessage,
   type TheoreticalPayload,
   type TradePayload,
-  openDelta1BasisSocket,
 } from "../api/delta1"
+import { getDelta1FeedSource } from "../data/source-registry"
 
 export type { ConnectionState } from "../api/delta1"
 
@@ -107,41 +107,6 @@ interface FeedState {
 const MAX_TAPE_LENGTH = 250
 const HISTORY_LENGTH = 120
 const CARRY_NOTIONAL_PER_LOT = 100000
-
-const MOCK_SYMBOLS = [
-  {
-    instrumentId: "KRX-FUT-1",
-    symbol: "KRX F1",
-    book: "Delta1",
-    strategy: "Calendar Basis",
-    baseCash: 271.5,
-    baseFutures: 271.3,
-  },
-  {
-    instrumentId: "KRX-FUT-2",
-    symbol: "KRX F2",
-    book: "Delta1",
-    strategy: "Calendar Basis",
-    baseCash: 274.2,
-    baseFutures: 274.0,
-  },
-  {
-    instrumentId: "SGX-NK-F",
-    symbol: "NK F",
-    book: "SGX",
-    strategy: "Japan Basis",
-    baseCash: 39250,
-    baseFutures: 39220,
-  },
-  {
-    instrumentId: "CME-ES",
-    symbol: "ES",
-    book: "US",
-    strategy: "S&P Basis",
-    baseCash: 5205.5,
-    baseFutures: 5206.25,
-  },
-]
 
 const basisHistoryStdDev = (values: number[]) => {
   if (!values.length) {
@@ -259,6 +224,8 @@ const clampArray = <T,>(entries: T[], limit: number) =>
 const clampTape = <T,>(entries: T[]) => clampArray(entries, MAX_TAPE_LENGTH)
 
 export function useDelta1BasisFeed(): FeedState {
+  const source = useMemo(() => getDelta1FeedSource(), [])
+  const symbolSeeds = useMemo(() => source.getSymbolSeeds(), [source])
   const [connectionState, setConnectionState] = useState<ConnectionState>(
     "connecting",
   )
@@ -291,11 +258,11 @@ export function useDelta1BasisFeed(): FeedState {
     if (payload.symbol) return payload.symbol
     const existing = snapshotsRef.current.get(payload.instrumentId)
     if (existing) return existing.symbol
-    const mockConfig = MOCK_SYMBOLS.find(
+    const mockConfig = symbolSeeds.find(
       (item) => item.instrumentId === payload.instrumentId,
     )
     return mockConfig?.symbol ?? payload.instrumentId
-  }, [])
+  }, [symbolSeeds])
 
   const emitMetrics = useCallback(() => {
     const basisVol = basisHistoryStdDev(basisHistoryRef.current)
@@ -547,10 +514,12 @@ export function useDelta1BasisFeed(): FeedState {
     if (mockIntervalsRef.current.length) {
       return
     }
-    setConnectionState("mock")
+    if (source.isMock) {
+      setConnectionState("mock")
+    }
     const tick = () => {
       if (isPausedRef.current) return
-      MOCK_SYMBOLS.forEach((symbolConfig) => {
+      symbolSeeds.forEach((symbolConfig) => {
         const now = Date.now()
         const existing = snapshotsRef.current.get(symbolConfig.instrumentId)
         const baseCash = existing?.cashMid ?? symbolConfig.baseCash
@@ -652,16 +621,20 @@ export function useDelta1BasisFeed(): FeedState {
     const interval = setInterval(tick, 1500)
     mockIntervalsRef.current.push(interval)
     tick()
-  }, [handleMessage])
+  }, [handleMessage, source.isMock, symbolSeeds])
 
   const stopMockFeed = useCallback(() => {
     clearMockIntervals()
   }, [clearMockIntervals])
 
   const connectSocket = useCallback(() => {
-    const socket = openDelta1BasisSocket()
+    const socket = source.openSocket()
     if (!socket) {
-      startMockFeed()
+      if (source.isMock) {
+        startMockFeed()
+      } else {
+        setConnectionState("closed")
+      }
       return
     }
     try {
@@ -700,13 +673,17 @@ export function useDelta1BasisFeed(): FeedState {
       }
     } catch (error) {
       console.error("Failed to connect websocket", error)
-      startMockFeed()
+      if (source.isMock) {
+        startMockFeed()
+      } else {
+        setConnectionState("closed")
+      }
     }
-  }, [handleMessage, startMockFeed, stopMockFeed])
+  }, [handleMessage, source, startMockFeed, stopMockFeed])
 
   useEffect(() => {
     if (typeof window === "undefined") {
-      setConnectionState("mock")
+      setConnectionState(source.isMock ? "mock" : "closed")
       return
     }
     isMountedRef.current = true
@@ -721,7 +698,7 @@ export function useDelta1BasisFeed(): FeedState {
       }
       stopMockFeed()
     }
-  }, [connectSocket, stopMockFeed])
+  }, [connectSocket, source.isMock, stopMockFeed])
 
   const pause = useCallback(() => {
     setIsPaused(true)
