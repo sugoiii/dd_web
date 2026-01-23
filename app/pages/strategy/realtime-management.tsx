@@ -40,9 +40,8 @@ import {
 
 import { Switch } from "~/components/ui/switch";
 import { realtimeManagementStrategies } from "~/fixtures/strategy";
+import { useAgGridTheme } from "~/lib/ag-grid-theme";
 
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-quartz.css";
 
 const formatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
@@ -135,6 +134,7 @@ function computeTargetLevels(strategy: StrategyRow) {
 }
 
 export default function RealTimeManagement() {
+  const gridTheme = useAgGridTheme();
   const [strategies, setStrategies] = useState(initialStrategies);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [focusedStrategyId, setFocusedStrategyId] = useState<string | null>(
@@ -627,6 +627,7 @@ export default function RealTimeManagement() {
               rowData={strategies}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
+              theme={gridTheme}
               animateRows
               rowHeight={34}
               headerHeight={34}

@@ -5,6 +5,7 @@ import { AgGridReact } from "ag-grid-react";
 import { PageTemplate } from "~/components/page-template";
 import { SummaryCard } from "~/components/summary-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { useAgGridTheme } from "~/lib/ag-grid-theme";
 
 interface IRow {
   name: string;
@@ -19,6 +20,7 @@ const etnMetrics = [
 ];
 
 export default function EtnMain() {
+  const gridTheme = useAgGridTheme();
   const [rowData] = useState<IRow[]>([
     { name: "KOSPI2", value: 1423 },
     { name: "SPX", value: 1423 },
@@ -40,7 +42,7 @@ export default function EtnMain() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="overflow-hidden rounded-lg border">
-            <AgGridReact rowData={rowData} columnDefs={colDefs} domLayout="autoHeight" />
+            <AgGridReact rowData={rowData} columnDefs={colDefs} domLayout="autoHeight" theme={gridTheme} />
           </div>
         </CardContent>
       </Card>
@@ -52,7 +54,7 @@ export default function EtnMain() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="overflow-hidden rounded-lg border">
-            <AgGridReact rowData={rowData} columnDefs={colDefs} domLayout="autoHeight" />
+            <AgGridReact rowData={rowData} columnDefs={colDefs} domLayout="autoHeight" theme={gridTheme} />
           </div>
         </CardContent>
       </Card>

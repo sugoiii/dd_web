@@ -48,10 +48,9 @@ import { Switch } from "~/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Progress } from "~/components/ui/progress";
 import { equityHedgeStrategies } from "~/fixtures/strategy";
+import { useAgGridTheme } from "~/lib/ag-grid-theme";
 import { cn } from "~/lib/utils";
 
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-quartz.css";
 
 type StrategySide = "Buy Futures / Sell Equity" | "Sell Futures / Buy Equity" | "Idle";
 type StrategyStatus = "ACTIVE" | "HALTED" | "ERROR";
@@ -785,6 +784,7 @@ function SelectCloneControl({
 }
 
 export default function EquityHedgeCockpit() {
+  const gridTheme = useAgGridTheme();
   const [strategies, setStrategies] = useState<StrategyRow[]>(initialStrategies);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
@@ -2058,6 +2058,7 @@ export default function EquityHedgeCockpit() {
               rowData={strategies}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
+              theme={gridTheme}
               getRowId={getRowId}
               rowSelection="multiple"
               animateRows
