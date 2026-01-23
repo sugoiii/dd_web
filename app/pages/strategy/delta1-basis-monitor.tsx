@@ -1,11 +1,4 @@
-import {
-  type CSSProperties,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type {
   ColDef,
   ColGroupDef,
@@ -18,7 +11,6 @@ import type {
   ICellRendererParams,
   RowClassParams,
 } from "ag-grid-community"
-import { AgGridReact } from "ag-grid-react"
 import {
   Activity,
   Filter,
@@ -28,19 +20,12 @@ import {
   RotateCcw,
   X,
 } from "lucide-react"
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { Area } from "recharts"
 
 import { PageTemplate } from "~/components/page-template"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "~/components/ui/chart"
 import { Input } from "~/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select"
 import { Slider } from "~/components/ui/slider"
@@ -54,12 +39,12 @@ import {
   type PositionStackRow,
   useDelta1BasisFeed,
 } from "~/hooks/use-delta1-basis-feed"
-import { cn } from "~/lib/utils"
-
-import "ag-grid-community/styles/ag-grid.css"
-import "ag-grid-community/styles/ag-theme-quartz.css"
-
-type ColumnSetKey = "core" | "liquidity"
+import { timestampFormatter } from "~/lib/formatters"
+import { ChartTemplate } from "~/templates/chart-template"
+import { GridTemplate } from "~/templates/grid-template"
+import { delta1ColumnSets, type Delta1ColumnSetKey } from "~/templates/columns/delta1"
+import { createPositionColumnDefs, createTapeColumnDefs } from "~/templates/columns/strategy"
+import { GridChartLayout } from "~/templates/pages/grid-chart-layout"
 
 type TapeRow = {
   id: string
@@ -82,44 +67,6 @@ type AutoHedgeRendererParams = ICellRendererParams<PositionRow, boolean> & {
 }
 
 const COLUMN_STATE_STORAGE_KEY = "delta1-basis-monitor-column-state"
-
-const numberFormatter = (value: number | null | undefined, digits = 2) => {
-  if (value === null || value === undefined || Number.isNaN(value)) return ""
-  return value.toLocaleString("en-US", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  })
-}
-
-const integerFormatter = (value: number | null | undefined) => {
-  if (value === null || value === undefined || Number.isNaN(value)) return ""
-  return value.toLocaleString("en-US", { maximumFractionDigits: 0 })
-}
-
-const basisFormatter = (value: number | null | undefined) => {
-  if (value === null || value === undefined || Number.isNaN(value)) return ""
-  const formatted = value.toFixed(2)
-  return `${value > 0 ? "+" : ""}${formatted}`
-}
-
-const currencyFormatter = (value: number | null | undefined) => {
-  if (value === null || value === undefined || Number.isNaN(value)) return ""
-  return value.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  })
-}
-
-const timestampFormatter = (value: number | null | undefined) => {
-  if (!value) return ""
-  return new Date(value).toLocaleTimeString("en-US", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  })
-}
 
 const connectionBadgeIntent: Record<ConnectionState, "default" | "destructive" | "secondary" | "outline"> = {
   connecting: "secondary",
@@ -145,18 +92,6 @@ const AutoHedgeRenderer = (params: AutoHedgeRendererParams) => {
   )
 }
 
-const compactGridStyle = {
-  "--ag-row-height": "32px",
-  "--ag-header-height": "32px",
-  "--ag-font-size": "12px",
-} as CSSProperties & Record<string, string>
-
-const compactSideGridStyle = {
-  "--ag-row-height": "30px",
-  "--ag-header-height": "30px",
-  "--ag-font-size": "11px",
-} as CSSProperties & Record<string, string>
-
 export default function Delta1BasisMonitorPage() {
   const {
     connectionState,
@@ -176,12 +111,11 @@ export default function Delta1BasisMonitorPage() {
 
   const [basisAlertBps, setBasisAlertBps] = useState(35)
   const [edgeAlertBps, setEdgeAlertBps] = useState(5)
-  const [activeColumnSet, setActiveColumnSet] = useState<ColumnSetKey>("core")
+  const [activeColumnSet, setActiveColumnSet] = useState<Delta1ColumnSetKey>("core")
   const [autoHedgeEnabled, setAutoHedgeEnabled] = useState(true)
   const [selectedSymbol, setSelectedSymbol] = useState<string>("")
   const [watchlist, setWatchlist] = useState<string[]>([])
   const [autoHedgeOverrides, setAutoHedgeOverrides] = useState<Record<string, boolean>>({})
-  const [columnDefs, setColumnDefs] = useState<(ColDef | ColGroupDef)[]>([])
 
   const gridApiRef = useRef<GridApi<Delta1BasisSnapshot> | null>(null)
   const tapeGridApiRef = useRef<GridApi<TapeRow> | null>(null)
@@ -193,185 +127,10 @@ export default function Delta1BasisMonitorPage() {
     [],
   )
 
-  const defaultColDef = useMemo<ColDef>(() => ({
-    sortable: true,
-    resizable: true,
-    filter: true,
-    cellClass: "text-xs",
-    headerClass: "text-[11px] font-semibold",
-  }), [])
-
-  const columnSets = useMemo<Record<ColumnSetKey, (ColDef | ColGroupDef)[]>>(
-    () => ({
-      core: [
-        {
-          headerName: "Instrument",
-          field: "symbol",
-          pinned: "left",
-          minWidth: 120,
-          cellClass: "font-semibold",
-        },
-        {
-          headerName: "Cash Leg",
-          marryChildren: true,
-          children: [
-            {
-              headerName: "Bid",
-              field: "cashBid",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-            {
-              headerName: "Ask",
-              field: "cashAsk",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-            {
-              headerName: "Mid",
-              field: "cashMid",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-          ],
-        },
-        {
-          headerName: "Futures Leg",
-          marryChildren: true,
-          children: [
-            {
-              headerName: "Bid",
-              field: "futuresBid",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-            {
-              headerName: "Ask",
-              field: "futuresAsk",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-            {
-              headerName: "Mid",
-              field: "futuresMid",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-          ],
-        },
-        {
-          headerName: "Derived Metrics",
-          marryChildren: true,
-          children: [
-            {
-              headerName: "Basis (bps)",
-              field: "basisBps",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => basisFormatter(value),
-            },
-            {
-              headerName: "Theo Edge (bps)",
-              field: "theoreticalEdgeBps",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => basisFormatter(value),
-            },
-            {
-              headerName: "Net Position",
-              field: "netPosition",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => integerFormatter(value),
-            },
-            {
-              headerName: "Carry P&L",
-              field: "carryPnL",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => currencyFormatter(value),
-            },
-            {
-              headerName: "Hedge Suggestion",
-              field: "hedgeSuggestion",
-            },
-            {
-              headerName: "Predicted Hedge Fill",
-              field: "predictedHedgeFill",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-          ],
-        },
-        {
-          headerName: "Timestamps",
-          children: [
-            {
-              headerName: "Quote",
-              field: "lastQuoteTimestamp",
-              valueFormatter: ({ value }) => timestampFormatter(value),
-            },
-            {
-              headerName: "Trade",
-              field: "lastTradeTimestamp",
-              valueFormatter: ({ value }) => timestampFormatter(value),
-            },
-          ],
-        },
-      ],
-      liquidity: [
-        {
-          headerName: "Instrument",
-          field: "symbol",
-          pinned: "left",
-          minWidth: 120,
-          cellClass: "font-semibold",
-        },
-        {
-          headerName: "Execution",
-          marryChildren: true,
-          children: [
-            {
-              headerName: "Cash Bid",
-              field: "cashBid",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-            {
-              headerName: "Futures Ask",
-              field: "futuresAsk",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-            {
-              headerName: "Theo Futures",
-              field: "theoreticalFutures",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => numberFormatter(value, 4),
-            },
-            {
-              headerName: "Theo Basis",
-              field: "theoreticalBasisBps",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => basisFormatter(value),
-            },
-            {
-              headerName: "Carry Daily",
-              field: "carryDaily",
-              type: "rightAligned",
-              valueFormatter: ({ value }) => currencyFormatter(value),
-            },
-            {
-              headerName: "Updated",
-              field: "lastUpdated",
-              valueFormatter: ({ value }) => timestampFormatter(value),
-            },
-          ],
-        },
-      ],
-    }),
-    [],
+  const columnDefs = useMemo<(ColDef | ColGroupDef)[]>(
+    () => delta1ColumnSets[activeColumnSet],
+    [activeColumnSet],
   )
-
-  useEffect(() => {
-    setColumnDefs(columnSets[activeColumnSet])
-  }, [activeColumnSet, columnSets])
 
   const instrumentOptions = useMemo(
     () => snapshots.map((snapshot) => snapshot.symbol),
@@ -422,57 +181,11 @@ export default function Delta1BasisMonitorPage() {
   }, [autoHedgeEnabled, autoHedgeOverrides, positionStack])
 
   const positionColumnDefs = useMemo<(ColDef | ColGroupDef)[]>(
-    () => [
-      { field: "book", rowGroup: true, hide: true },
-      { field: "strategy", rowGroup: true, hide: true },
-      {
-        headerName: "Symbol",
-        field: "symbol",
-        pinned: "left",
-        minWidth: 120,
-      },
-      {
-        headerName: "Cash Pos",
-        field: "cashPosition",
-        type: "rightAligned",
-        aggFunc: "sum",
-        valueFormatter: ({ value }) => integerFormatter(value),
-      },
-      {
-        headerName: "Futures Pos",
-        field: "futuresPosition",
-        type: "rightAligned",
-        aggFunc: "sum",
-        valueFormatter: ({ value }) => integerFormatter(value),
-      },
-      {
-        headerName: "Net Δ",
-        field: "netDelta",
-        type: "rightAligned",
-        aggFunc: "sum",
-        valueFormatter: ({ value }) => integerFormatter(value),
-      },
-      {
-        headerName: "Carry Decay",
-        field: "carryDecay",
-        type: "rightAligned",
-        aggFunc: "avg",
-        valueFormatter: ({ value }) => currencyFormatter(value),
-      },
-      {
-        headerName: "Auto Hedge",
-        field: "autoHedge",
-        cellRenderer: AutoHedgeRenderer,
-        cellRendererParams: {
-          onToggle: handleAutoHedgeToggle,
-        },
-      },
-      {
-        headerName: "Updated",
-        field: "lastUpdated",
-        valueFormatter: ({ value }) => timestampFormatter(value),
-      },
-    ],
+    () =>
+      createPositionColumnDefs({
+        autoHedgeRenderer: AutoHedgeRenderer,
+        onAutoHedgeToggle: handleAutoHedgeToggle,
+      }),
     [handleAutoHedgeToggle],
   )
 
@@ -501,54 +214,7 @@ export default function Delta1BasisMonitorPage() {
   }, [eventTape, tradeTape])
 
   const tapeColumnDefs = useMemo<(ColDef | ColGroupDef)[]>(
-    () => [
-      {
-        headerName: "Time",
-        field: "timestamp",
-        valueFormatter: ({ value }) => timestampFormatter(value),
-        minWidth: 110,
-      },
-      {
-        headerName: "Type",
-        field: "type",
-        width: 90,
-        cellClass: "capitalize",
-      },
-      {
-        headerName: "Symbol",
-        field: "symbol",
-        minWidth: 120,
-      },
-      {
-        headerName: "Leg",
-        field: "leg",
-        width: 90,
-        cellClass: "capitalize",
-      },
-      {
-        headerName: "Side",
-        field: "side",
-        width: 90,
-        cellClass: "capitalize",
-      },
-      {
-        headerName: "Size",
-        field: "size",
-        type: "rightAligned",
-        valueFormatter: ({ value }) => integerFormatter(value),
-      },
-      {
-        headerName: "Price",
-        field: "price",
-        type: "rightAligned",
-        valueFormatter: ({ value }) => numberFormatter(value, 4),
-      },
-      {
-        headerName: "Event",
-        field: "message",
-        flex: 1,
-      },
-    ],
+    () => createTapeColumnDefs(),
     [],
   )
 
@@ -750,7 +416,7 @@ export default function Delta1BasisMonitorPage() {
               type="single"
               value={activeColumnSet}
               onValueChange={(value) =>
-                setActiveColumnSet((value as ColumnSetKey) ?? "core")
+                setActiveColumnSet((value as Delta1ColumnSetKey) ?? "core")
               }
               variant="outline"
               size="sm"
@@ -774,90 +440,86 @@ export default function Delta1BasisMonitorPage() {
             </div>
           </div>
         </div>
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="flex min-h-[540px] flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex min-w-[220px] items-center gap-2 rounded-md border px-2 py-1">
-                <Filter className="size-4 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder={quickFilterPlaceholder}
-                  className="h-8 border-0 px-0 text-xs focus-visible:ring-0"
-                />
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="font-semibold">Basis alert</span>
-                <Slider
-                  value={[basisAlertBps]}
-                  min={5}
-                  max={100}
-                  step={1}
-                  className="w-32"
-                  onValueChange={([value]) => setBasisAlertBps(value)}
-                />
-                <span>{basisAlertBps} bps</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="font-semibold">Edge alert</span>
-                <Slider
-                  value={[edgeAlertBps]}
-                  min={1}
-                  max={25}
-                  step={1}
-                  className="w-28"
-                  onValueChange={([value]) => setEdgeAlertBps(value)}
-                />
-                <span>{edgeAlertBps} bps</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <Select
-                  value={selectedSymbol}
-                  onValueChange={(value) => {
-                    setSelectedSymbol("")
-                    handleAddToWatchlist(value)
-                  }}
-                >
-                  <SelectTrigger className="h-8 w-44 text-xs">
-                    <SelectValue placeholder="Add symbol to watch" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 text-xs">
-                    {instrumentOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
+        <GridChartLayout
+          primaryGrid={
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex min-w-[220px] items-center gap-2 rounded-md border px-2 py-1">
+                  <Filter className="size-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder={quickFilterPlaceholder}
+                    className="h-8 border-0 px-0 text-xs focus-visible:ring-0"
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="font-semibold">Basis alert</span>
+                  <Slider
+                    value={[basisAlertBps]}
+                    min={5}
+                    max={100}
+                    step={1}
+                    className="w-32"
+                    onValueChange={([value]) => setBasisAlertBps(value)}
+                  />
+                  <span>{basisAlertBps} bps</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="font-semibold">Edge alert</span>
+                  <Slider
+                    value={[edgeAlertBps]}
+                    min={1}
+                    max={25}
+                    step={1}
+                    className="w-28"
+                    onValueChange={([value]) => setEdgeAlertBps(value)}
+                  />
+                  <span>{edgeAlertBps} bps</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <Select
+                    value={selectedSymbol}
+                    onValueChange={(value) => {
+                      setSelectedSymbol("")
+                      handleAddToWatchlist(value)
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-44 text-xs">
+                      <SelectValue placeholder="Add symbol to watch" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 text-xs">
+                      {instrumentOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex flex-wrap items-center gap-1">
+                    {watchlist.map((symbol) => (
+                      <Badge key={symbol} variant="outline" className="gap-1 text-[11px]">
+                        {symbol}
+                        <button
+                          type="button"
+                          aria-label={`Remove ${symbol}`}
+                          onClick={() => removeFromWatchlist(symbol)}
+                          className="rounded-full p-0.5 hover:bg-muted"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </Badge>
                     ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex flex-wrap items-center gap-1">
-                  {watchlist.map((symbol) => (
-                    <Badge key={symbol} variant="outline" className="gap-1 text-[11px]">
-                      {symbol}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${symbol}`}
-                        onClick={() => removeFromWatchlist(symbol)}
-                        className="rounded-full p-0.5 hover:bg-muted"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div
-              className="ag-theme-quartz flex-1 overflow-hidden rounded-lg border bg-background"
-              style={compactGridStyle}
-            >
-              <AgGridReact<Delta1BasisSnapshot>
+              <GridTemplate<Delta1BasisSnapshot>
+                containerClassName="flex-1"
                 gridOptions={mainGridOptions}
                 columnDefs={columnDefs}
-                defaultColDef={defaultColDef}
                 rowData={snapshots}
                 pinnedBottomRowData={pinnedBottomRowData}
                 autoSizeStrategy={autoSizeStrategy}
-                className="h-full w-full"
                 animateRows
                 rowClassRules={rowClassRules}
                 getRowId={getRowId}
@@ -870,29 +532,25 @@ export default function Delta1BasisMonitorPage() {
                 onColumnPinned={persistColumnState}
                 onColumnVisible={persistColumnState}
                 onColumnResized={persistColumnState}
-                rowHeight={32}
-                headerHeight={32}
                 suppressAggFuncInHeader
               />
-            </div>
-          </div>
-          <div className="flex min-h-[540px] flex-col gap-3">
-            <Card className="flex flex-1 flex-col">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-semibold">Position Stack</CardTitle>
-                <Badge variant="secondary" className="gap-1 text-[11px]">
-                  <Activity className="size-3" />
-                  {augmentedPositions.length}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex-1 p-0">
-                <div
-                  className="ag-theme-quartz h-full w-full overflow-hidden border-t"
-                  style={compactSideGridStyle}
-                >
-                  <AgGridReact<PositionRow>
+            </>
+          }
+          secondaryGrid={
+            <>
+              <Card className="flex flex-1 flex-col">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold">Position Stack</CardTitle>
+                  <Badge variant="secondary" className="gap-1 text-[11px]">
+                    <Activity className="size-3" />
+                    {augmentedPositions.length}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="flex-1 p-0">
+                  <GridTemplate<PositionRow>
+                    containerClassName="h-full w-full rounded-none border-0 border-t"
+                    density="compact"
                     columnDefs={positionColumnDefs}
-                    defaultColDef={defaultColDef}
                     autoGroupColumnDef={{
                       headerName: "Book / Strategy",
                       minWidth: 160,
@@ -903,55 +561,49 @@ export default function Delta1BasisMonitorPage() {
                     animateRows
                     suppressAggFuncInHeader
                     getRowId={(params) => params.data?.id ?? Math.random().toString(36)}
-                    rowHeight={30}
-                    headerHeight={30}
                     autoSizeStrategy={autoSizeStrategy}
                     statusBar={statusBar}
                     rowBuffer={20}
                   />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="flex flex-col">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-semibold">Trade & Event Tape</CardTitle>
-                <Badge variant="secondary" className="gap-1 text-[11px]">
-                  <Activity className="size-3" />
-                  {tapeRows.length}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex-1 p-0">
-                <div
-                  className="ag-theme-quartz h-[220px] w-full overflow-hidden border-t"
-                  style={compactSideGridStyle}
-                >
-                  <AgGridReact<TapeRow>
+                </CardContent>
+              </Card>
+              <Card className="flex flex-col">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold">Trade & Event Tape</CardTitle>
+                  <Badge variant="secondary" className="gap-1 text-[11px]">
+                    <Activity className="size-3" />
+                    {tapeRows.length}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="flex-1 p-0">
+                  <GridTemplate<TapeRow>
+                    containerClassName="h-[220px] w-full rounded-none border-0 border-t"
+                    density="compact"
                     columnDefs={tapeColumnDefs}
-                    defaultColDef={defaultColDef}
                     rowData={tapeRows}
                     animateRows
                     rowBuffer={40}
                     suppressAggFuncInHeader
                     getRowId={(params) => params.data?.id ?? Math.random().toString(36)}
-                    ref={(ref) => {
-                      tapeGridApiRef.current = ref?.api ?? null
+                    onGridReady={(event) => {
+                      tapeGridApiRef.current = event.api
                     }}
-                    rowHeight={30}
-                    headerHeight={30}
                     autoSizeStrategy={autoSizeStrategy}
                     onFirstDataRendered={(event) =>
                       event.api.ensureIndexVisible(event.api.getDisplayedRowCount() - 1)
                     }
                   />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </>
+          }
+          chartPanel={
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold">Market Pulse</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <ChartContainer
+                <ChartTemplate
                   config={{
                     volatility: {
                       label: "Basis Volatility",
@@ -962,65 +614,48 @@ export default function Delta1BasisMonitorPage() {
                       color: "var(--color-latency)",
                     },
                   }}
+                  data={metricsChartData}
+                  xAxisKey="timestamp"
+                  xAxisFormatter={(value) => timestampFormatter(Number(value))}
+                  leftAxisFormatter={(value) => `${value.toFixed(1)}bps`}
+                  rightAxisFormatter={(value) => `${Math.round(value)}ms`}
+                  showRightAxis
                   className="h-[180px]"
                 >
-                  <AreaChart data={metricsChartData}>
-                    <defs>
-                      <linearGradient id="basis-vol" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-volatility, #22c55e)" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="var(--color-volatility, #22c55e)" stopOpacity={0.1} />
-                      </linearGradient>
-                      <linearGradient id="latency" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-latency, #06b6d4)" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="var(--color-latency, #06b6d4)" stopOpacity={0.1} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-                    <XAxis
-                      dataKey="timestamp"
-                      tickFormatter={(value) => timestampFormatter(value)}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis
-                      yAxisId="left"
-                      tickFormatter={(value) => `${value.toFixed(1)}bps`}
-                      width={46}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      tickFormatter={(value) => `${Math.round(value)}ms`}
-                      width={38}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type="monotone"
-                      dataKey="basisVolatility"
-                      stroke="var(--color-volatility, #16a34a)"
-                      fill="url(#basis-vol)"
-                      strokeWidth={2}
-                      dot={false}
-                      yAxisId="left"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="latencyMs"
-                      stroke="var(--color-latency, #0891b2)"
-                      fill="url(#latency)"
-                      strokeWidth={2}
-                      dot={false}
-                      yAxisId="right"
-                    />
-                  </AreaChart>
-                </ChartContainer>
+                  <defs>
+                    <linearGradient id="basis-vol" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-volatility, #22c55e)" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="var(--color-volatility, #22c55e)" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="latency" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-latency, #06b6d4)" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="var(--color-latency, #06b6d4)" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="basisVolatility"
+                    stroke="var(--color-volatility, #16a34a)"
+                    fill="url(#basis-vol)"
+                    strokeWidth={2}
+                    dot={false}
+                    yAxisId="left"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="latencyMs"
+                    stroke="var(--color-latency, #0891b2)"
+                    fill="url(#latency)"
+                    strokeWidth={2}
+                    dot={false}
+                    yAxisId="right"
+                  />
+                </ChartTemplate>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          }
+        />
       </div>
     </PageTemplate>
   )
 }
-
