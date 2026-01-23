@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import {
-  demoSheetSnapshot,
-  fetchSheetSnapshot,
-  openSheetSocket,
   type AllocationRow,
   type LimitRow,
   type SheetConnectionState,
@@ -11,6 +8,7 @@ import {
   type SheetSnapshotParams,
   type SheetStreamMessage,
 } from "../api/common"
+import { getCommonSheetSource } from "../data/source-registry"
 
 export type CommonSheetRequestState = {
   allocationRows: AllocationRow[]
@@ -40,8 +38,8 @@ const mergeRows = <T extends Record<string, string>>(
 }
 
 const normalizeSnapshot = (snapshot: SheetSnapshot): SheetSnapshot => ({
-  allocations: snapshot.allocations ?? demoSheetSnapshot.allocations,
-  limits: snapshot.limits ?? demoSheetSnapshot.limits,
+  allocations: snapshot.allocations ?? [],
+  limits: snapshot.limits ?? [],
 })
 
 const parseStreamMessage = (payload: unknown): SheetStreamMessage | null => {
@@ -56,12 +54,9 @@ export const useCommonSheetRequest = (
   params: SheetSnapshotParams & { enableStream?: boolean } = {},
 ): CommonSheetRequestState => {
   const { enableStream = true, view, scope, asOf } = params
-  const [allocationRows, setAllocationRows] = useState<AllocationRow[]>(
-    demoSheetSnapshot.allocations,
-  )
-  const [limitRows, setLimitRows] = useState<LimitRow[]>(
-    demoSheetSnapshot.limits,
-  )
+  const source = useMemo(() => getCommonSheetSource(), [])
+  const [allocationRows, setAllocationRows] = useState<AllocationRow[]>([])
+  const [limitRows, setLimitRows] = useState<LimitRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [connectionState, setConnectionState] = useState<SheetConnectionState>(
@@ -81,7 +76,7 @@ export const useCommonSheetRequest = (
       setError(null)
       try {
         const snapshot = normalizeSnapshot(
-          await fetchSheetSnapshot({ view, scope, asOf }),
+          await source.fetchSnapshot({ view, scope, asOf }),
         )
         if (!isActive) {
           return
@@ -93,8 +88,8 @@ export const useCommonSheetRequest = (
           return
         }
         setError(err instanceof Error ? err.message : "Unable to load data")
-        setAllocationRows(demoSheetSnapshot.allocations)
-        setLimitRows(demoSheetSnapshot.limits)
+        setAllocationRows([])
+        setLimitRows([])
       } finally {
         if (isActive) {
           setIsLoading(false)
@@ -107,7 +102,7 @@ export const useCommonSheetRequest = (
     return () => {
       isActive = false
     }
-  }, [asOf, scope, view, refreshIndex])
+  }, [asOf, scope, source, view, refreshIndex])
 
   useEffect(() => {
     if (!enableStream) {
@@ -115,9 +110,9 @@ export const useCommonSheetRequest = (
       return
     }
 
-    const socket = openSheetSocket()
+    const socket = source.openSocket()
     if (!socket) {
-      setConnectionState("mock")
+      setConnectionState(source.isMock ? "mock" : "closed")
       return
     }
 
@@ -183,7 +178,7 @@ export const useCommonSheetRequest = (
     return () => {
       socket.close()
     }
-  }, [enableStream])
+  }, [enableStream, source])
 
   return useMemo(
     () => ({

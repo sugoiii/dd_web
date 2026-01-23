@@ -5,6 +5,7 @@ import { ArrowUpRight, CalendarDays, TrendingDown, TrendingUp } from "lucide-rea
 import { format, startOfDay } from "date-fns";
 
 import { PageTemplate } from "~/components/page-template";
+import { departmentPnls, holidaySeeds, usefulLinks } from "~/fixtures/common";
 import {
   Card,
   CardContent,
@@ -42,40 +43,6 @@ type HolidaySeed = {
   impact: "Closed" | "Partial";
 };
 
-const HOLIDAY_SEEDS: HolidaySeed[] = [
-  { month: 0, day: 1, label: "New Year's Day", region: "Global", impact: "Closed" },
-  { month: 1, day: 17, label: "Lunar New Year", region: "Asia", impact: "Partial" },
-  { month: 4, day: 1, label: "Labor Day", region: "EMEA + APAC", impact: "Closed" },
-  { month: 6, day: 4, label: "Independence Day", region: "US", impact: "Partial" },
-  { month: 8, day: 16, label: "Mid-Autumn Festival", region: "Asia", impact: "Partial" },
-  { month: 11, day: 25, label: "Christmas Day", region: "Global", impact: "Closed" },
-];
-
-const departmentPnls = [
-  { department: "Index Arbitrage", pnl: 1.38, planVariance: 0.24 },
-  { department: "Systematic Macro", pnl: -0.42, planVariance: -0.15 },
-  { department: "Options Desk", pnl: 0.86, planVariance: 0.12 },
-  { department: "Credit Relative Value", pnl: 0.31, planVariance: -0.02 },
-  { department: "Digital Assets", pnl: 0.18, planVariance: 0.04 },
-];
-
-const usefulLinks = [
-  {
-    title: "ETN Intraday P&L",
-    href: "/etn/pnl",
-    description: "Attribution drill-down for structured product flows and hedges.",
-  },
-  {
-    title: "Strategy Delta-1 Basis Monitor",
-    href: "/strategy/delta1-basis",
-    description: "Cash-futures basis oversight with automation controls.",
-  },
-  {
-    title: "Strategy Realtime Management",
-    href: "/strategy/realtime-management",
-    description: "Central control tower for systematic allocation workflows.",
-  },
-];
 
 function getUpcomingDate(month: number, day: number, reference: Date) {
   const candidate = new Date(reference.getFullYear(), month, day);
@@ -85,8 +52,8 @@ function getUpcomingDate(month: number, day: number, reference: Date) {
   return candidate;
 }
 
-function getGlobalHolidays(reference: Date) {
-  return HOLIDAY_SEEDS.map((seed) => ({
+function getGlobalHolidays(reference: Date, seeds: HolidaySeed[]) {
+  return seeds.map((seed) => ({
     ...seed,
     date: getUpcomingDate(seed.month, seed.day, reference),
   })).sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -99,7 +66,7 @@ function formatPnL(value: number) {
 
 export default function DeskDashboardLanding() {
   const today = useMemo(() => startOfDay(new Date()), []);
-  const holidays = useMemo(() => getGlobalHolidays(today), [today]);
+  const holidays = useMemo(() => getGlobalHolidays(today, holidaySeeds), [today]);
   const selectedHolidayDates = useMemo(
     () => holidays.map((holiday) => holiday.date),
     [holidays],
