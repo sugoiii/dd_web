@@ -24,19 +24,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { cn } from "~/lib/utils";
+import {
+  THEME_CHANGE_EVENT,
+  applyThemeToDocument,
+  getStoredTheme,
+  storeTheme,
+} from "~/lib/theme";
+import type { ThemeMode } from "~/lib/theme";
 import { navigationItems } from "~/config/navigation";
 import type { NavItem } from "~/config/navigation";
 import { Github, Globe, Moon, Search, Sparkles, SunMedium } from "lucide-react";
 import { Link, useLocation } from "react-router";
 
-type ThemeMode = "light" | "dark";
-
 type BreadcrumbEntry = {
   title: string;
   path?: string;
 };
-
-const THEME_STORAGE_KEY = "desk-design:theme";
 
 function normalizePath(value?: string | null): string | undefined {
   if (!value) {
@@ -148,8 +151,8 @@ export function SiteHeader() {
       return;
     }
 
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
-    if (stored === "light" || stored === "dark") {
+    const stored = getStoredTheme();
+    if (stored) {
       setTheme(stored);
       return;
     }
@@ -163,10 +166,9 @@ export function SiteHeader() {
       return;
     }
 
-    const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    root.style.colorScheme = theme === "dark" ? "dark" : "light";
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    applyThemeToDocument(theme);
+    storeTheme(theme);
+    window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: theme }));
   }, [theme]);
 
   const toggleTheme = React.useCallback(() => {
@@ -180,7 +182,9 @@ export function SiteHeader() {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="h-8 w-px bg-border" />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Currently viewing</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80 dark:text-slate-300/80">
+              Currently viewing
+            </p>
             <Breadcrumb>
               <BreadcrumbList className="mt-1">
                 {breadcrumbs.map((breadcrumb, index) => {
@@ -191,13 +195,17 @@ export function SiteHeader() {
                     <React.Fragment key={key}>
                       <BreadcrumbItem>
                         {isLast ? (
-                          <BreadcrumbPage className="text-sm font-semibold">{breadcrumb.title}</BreadcrumbPage>
+                          <BreadcrumbPage className="text-sm font-semibold text-foreground/90 dark:text-slate-100">
+                            {breadcrumb.title}
+                          </BreadcrumbPage>
                         ) : breadcrumb.path ? (
-                          <BreadcrumbLink asChild className="text-sm">
+                          <BreadcrumbLink asChild className="text-sm text-foreground/80 dark:text-slate-200">
                             <Link to={breadcrumb.path}>{breadcrumb.title}</Link>
                           </BreadcrumbLink>
                         ) : (
-                          <BreadcrumbLink className="text-sm">{breadcrumb.title}</BreadcrumbLink>
+                          <BreadcrumbLink className="text-sm text-foreground/80 dark:text-slate-200">
+                            {breadcrumb.title}
+                          </BreadcrumbLink>
                         )}
                       </BreadcrumbItem>
                       {!isLast && <BreadcrumbSeparator />}

@@ -3,10 +3,9 @@ import type { ColDef } from "ag-grid-community"
 import type { AgGridReactProps } from "ag-grid-react"
 import { AgGridReact } from "ag-grid-react"
 
+import { useAgGridTheme } from "~/lib/ag-grid-theme"
 import { cn } from "~/lib/utils"
 
-import "ag-grid-community/styles/ag-grid.css"
-import "ag-grid-community/styles/ag-theme-quartz.css"
 
 type GridTemplateProps<T> = Omit<AgGridReactProps<T>, "className"> & {
   className?: string
@@ -35,6 +34,7 @@ export function GridTemplate<T>({
   defaultColDef,
   ...props
 }: GridTemplateProps<T>) {
+  const gridTheme = useAgGridTheme()
   const resolvedRowHeight = rowHeight ?? (density === "compact" ? 30 : 32)
   const resolvedHeaderHeight = headerHeight ?? (density === "compact" ? 30 : 32)
   const gridStyle = {
@@ -55,6 +55,7 @@ export function GridTemplate<T>({
       <AgGridReact<T>
         {...props}
         className={cn("h-full w-full", className)}
+        theme={gridTheme}
         rowHeight={resolvedRowHeight}
         headerHeight={resolvedHeaderHeight}
         defaultColDef={{ ...baseDefaultColDef, ...defaultColDef }}

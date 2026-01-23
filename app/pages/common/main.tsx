@@ -8,9 +8,8 @@ import { CommonToolbar } from "~/components/common-toolbar";
 import { PageTemplate } from "~/components/page-template";
 import { Badge } from "~/components/ui/badge";
 import { useCommonSheetRequest } from "~/hooks/request";
+import { useAgGridTheme } from "~/lib/ag-grid-theme";
 
-import "ag-grid-enterprise/styles/ag-grid.css";
-import "ag-grid-enterprise/styles/ag-theme-quartz.css";
 
 const allocationColumns: ColDef<AllocationRow>[] = [
   { field: "sleeve", headerName: "Sleeve" },
@@ -26,6 +25,7 @@ const limitColumns: ColDef<LimitRow>[] = [
 ];
 
 export default function CommonOverview() {
+  const gridTheme = useAgGridTheme();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(() =>
     startOfDay(new Date()),
   );
@@ -101,6 +101,7 @@ export default function CommonOverview() {
               rowData={allocationRows}
               columnDefs={allocationColumns}
               domLayout="autoHeight"
+              theme={gridTheme}
             />
           </div>
         </section>
@@ -115,7 +116,7 @@ export default function CommonOverview() {
             </p>
           </div>
           <div className="ag-theme-quartz density-compact overflow-hidden rounded-md border">
-            <AgGridReact rowData={limitRows} columnDefs={limitColumns} domLayout="autoHeight" />
+            <AgGridReact rowData={limitRows} columnDefs={limitColumns} domLayout="autoHeight" theme={gridTheme} />
           </div>
         </section>
       </div>

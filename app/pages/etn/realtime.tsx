@@ -15,9 +15,8 @@ import { PageTemplate } from "~/components/page-template";
 import { SummaryCard } from "~/components/summary-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
+import { useAgGridTheme } from "~/lib/ag-grid-theme";
 
-import "ag-grid-enterprise/styles/ag-grid.css";
-import "ag-grid-enterprise/styles/ag-theme-quartz.css";
 
 const makeCellClassRules = <T,>(rules: NonNullable<ColDef<T>["cellClassRules"]>) => rules;
 
@@ -262,6 +261,7 @@ const alertFeed = [
 ];
 
 export default function EtnRealtime() {
+  const gridTheme = useAgGridTheme();
   const marketRowData = useMemo<MarketMakingRow[]>(() => {
     return Array.from({ length: 50 }, (_, index) => {
       const template = baseMarketUniverse[index % baseMarketUniverse.length];
@@ -612,6 +612,7 @@ export default function EtnRealtime() {
                     suppressHeaderMenuButton: true,
                     flex: 1,
                   }}
+                  theme={gridTheme}
                   animateRows
                   rowHeight={34}
                   headerHeight={36}
@@ -654,6 +655,7 @@ export default function EtnRealtime() {
                       suppressHeaderMenuButton: true,
                       flex: 1,
                     }}
+                    theme={gridTheme}
                     animateRows
                     rowHeight={34}
                     headerHeight={36}
@@ -688,6 +690,7 @@ export default function EtnRealtime() {
                       suppressHeaderMenuButton: true,
                       flex: 1,
                     }}
+                    theme={gridTheme}
                     animateRows
                     rowHeight={34}
                     headerHeight={36}
