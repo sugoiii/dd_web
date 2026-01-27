@@ -1,16 +1,27 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { type ColDef } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import { startOfDay } from "date-fns";
+import { RefreshCw } from "lucide-react";
 
 import { type PriceRow, type PositionRow } from "~/api/common";
-import { CommonToolbar } from "~/components/common-toolbar";
+import { type ToolbarItem, CommonToolbar } from "~/components/common-toolbar";
 import { PageTemplate } from "~/components/page-template";
 import { Badge } from "~/components/ui/badge";
 import { useBookSnapshotRequest } from "~/hooks/request";
 import { useAgGridTheme } from "~/lib/ag-grid-theme";
 
 import { integerFormatter } from "~/lib/formatters";
+
+const VIEW_OPTIONS = [
+  { value: "overview", label: "Overview" },
+  { value: "stress", label: "Stress" },
+];
+
+const SCOPE_OPTIONS = [
+  { value: "core", label: "Core sleeves" },
+  { value: "extended", label: "Extended" },
+];
 
 const priceColumnDefs: ColDef<PriceRow>[] = [
   { field: "symbol", headerName: "Symbol", width: 100 },
@@ -33,7 +44,9 @@ const positionColumnDefs: ColDef<PositionRow>[] = [
 export default function CommonOverview() {
   const gridTheme = useAgGridTheme();
   const [asOfDate, setAsOfDate] = useState<Date | undefined>(() => startOfDay(new Date()));
-  const [fund, setFund] = useState("9999");
+  const [view, setView] = useState("overview");
+  const [scope, setScope] = useState("core");
+  const fund = "9999";
 
   const { priceRows, positionRows, isLoading, error, connectionState, refresh } = useBookSnapshotRequest({
     asOfDate,
@@ -41,6 +54,48 @@ export default function CommonOverview() {
   });
 
   const connectionLabel = connectionState === "open" ? "Live" : connectionState === "connecting" ? "Connecting" : connectionState === "mock" ? "Mock" : "Offline";
+  const toolbarItems = useMemo<ToolbarItem[]>(
+    () => [
+      {
+        id: "as-of-date",
+        type: "date",
+        value: asOfDate,
+        onChange: setAsOfDate,
+        placeholder: "Pick a date",
+      },
+      {
+        id: "view",
+        type: "select",
+        value: view,
+        onChange: setView,
+        options: VIEW_OPTIONS,
+        placeholder: "View",
+        size: "sm",
+        triggerClassName: "min-w-[150px]",
+      },
+      {
+        id: "scope",
+        type: "select",
+        value: scope,
+        onChange: setScope,
+        options: SCOPE_OPTIONS,
+        placeholder: "Scope",
+        size: "sm",
+        triggerClassName: "min-w-[160px]",
+      },
+      {
+        id: "refresh",
+        type: "action",
+        label: "Refresh",
+        icon: RefreshCw,
+        onClick: refresh,
+        isLoading,
+        variant: "secondary",
+        size: "sm",
+      },
+    ],
+    [asOfDate, isLoading, refresh, scope, view],
+  );
 
   return (
     <PageTemplate
@@ -48,7 +103,7 @@ export default function CommonOverview() {
       description="Compact, sheet-like overview of allocation drifts and risk limits."
       actions={
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-          <CommonToolbar selectedDate={asOfDate} view={fund} scope={fund} onDateChange={setAsOfDate} onViewChange={setFund} onScopeChange={setFund} onRefresh={refresh} isRefreshing={isLoading} />
+          <CommonToolbar items={toolbarItems} />
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant={isLoading ? "secondary" : "outline"}>{isLoading ? "Loading" : "Ready"}</Badge>
             <Badge variant={connectionState === "open" ? "default" : "secondary"}>Stream: {connectionLabel}</Badge>
