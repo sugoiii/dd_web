@@ -1,12 +1,12 @@
 import {
   fetchSheetSnapshot,
   openSheetSocket,
-  type SheetSnapshotParams,
+  type BookSnapshotParams,
 } from "../../api/common"
-import type { CommonSheetSource } from "../common-source"
+import type { BookSnapshotSource } from "../common-source"
 
-export const realCommonSheetSource: CommonSheetSource = {
+export const realBookSnapshotSource: BookSnapshotSource = {
   isMock: false,
-  fetchSnapshot: (params?: SheetSnapshotParams) => fetchSheetSnapshot(params),
+  fetchSnapshot: (params?: BookSnapshotParams) => fetchSheetSnapshot(params),
   openSocket: () => openSheetSocket(),
 }

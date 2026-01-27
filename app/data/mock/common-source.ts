@@ -1,8 +1,8 @@
-import { commonSheetSnapshot } from "../../fixtures/common"
-import type { CommonSheetSource } from "../common-source"
+import { bookSnapshot } from "../../fixtures/common"
+import type { BookSnapshotSource } from "../common-source"
 
-export const mockCommonSheetSource: CommonSheetSource = {
+export const mockBookSnapshotSource: BookSnapshotSource = {
   isMock: true,
-  fetchSnapshot: async () => commonSheetSnapshot,
+  fetchSnapshot: async () => bookSnapshot,
   openSocket: () => null,
 }

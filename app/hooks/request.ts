@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import {
-  type AllocationRow,
-  type LimitRow,
+  type PositionRow,
+  type PriceRow,
   type SheetConnectionState,
-  type SheetSnapshot,
-  type SheetSnapshotParams,
-  type SheetStreamMessage,
+  type BookSnapshot,
+  type BookSnapshotParams,
+  type BookStreamMessage,
 } from "../api/common"
-import { getCommonSheetSource } from "../data/source-registry"
+import { getBookSnapshotSource } from "../data/source-registry"
 
-export type CommonSheetRequestState = {
-  allocationRows: AllocationRow[]
-  limitRows: LimitRow[]
+export type BookSnapshotRequestState = {
+  priceRows: PriceRow[]
+  positionRows: PositionRow[]
   isLoading: boolean
   error: string | null
   connectionState: SheetConnectionState
   refresh: () => void
 }
 
-const mergeRows = <T extends Record<string, string>>(
+const mergeRows = <T extends Record<string, string|number>>(
   existing: T[],
   updates: T[],
   key: keyof T,
@@ -37,26 +37,26 @@ const mergeRows = <T extends Record<string, string>>(
   return Array.from(map.values())
 }
 
-const normalizeSnapshot = (snapshot: SheetSnapshot): SheetSnapshot => ({
-  allocations: snapshot.allocations ?? [],
-  limits: snapshot.limits ?? [],
+const normalizeSnapshot = (snapshot: BookSnapshot): BookSnapshot => ({
+  priceRows: snapshot.priceRows ?? [],
+  positionRows: snapshot.positionRows ?? [],
 })
 
-const parseStreamMessage = (payload: unknown): SheetStreamMessage | null => {
+const parseStreamMessage = (payload: unknown): BookStreamMessage | null => {
   if (!payload || typeof payload !== "object") {
     return null
   }
 
-  return payload as SheetStreamMessage
+  return payload as BookStreamMessage
 }
 
-export const useCommonSheetRequest = (
-  params: SheetSnapshotParams & { enableStream?: boolean } = {},
-): CommonSheetRequestState => {
-  const { enableStream = true, view, scope, asOf } = params
-  const source = useMemo(() => getCommonSheetSource(), [])
-  const [allocationRows, setAllocationRows] = useState<AllocationRow[]>([])
-  const [limitRows, setLimitRows] = useState<LimitRow[]>([])
+export const useBookSnapshotRequest = (
+  params: BookSnapshotParams & { enableStream?: boolean } = {},
+): BookSnapshotRequestState => {
+  const { enableStream = true, asOfDate, fund } = params
+  const source = useMemo(() => getBookSnapshotSource(), [])
+  const [priceRows, setPriceRows] = useState<PriceRow[]>([])
+  const [positionRows, setPositionRows] = useState<PositionRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [connectionState, setConnectionState] = useState<SheetConnectionState>(
@@ -76,20 +76,20 @@ export const useCommonSheetRequest = (
       setError(null)
       try {
         const snapshot = normalizeSnapshot(
-          await source.fetchSnapshot({ view, scope, asOf }),
+          await source.fetchSnapshot({ asOfDate, fund }),
         )
         if (!isActive) {
           return
         }
-        setAllocationRows(snapshot.allocations)
-        setLimitRows(snapshot.limits)
+        setPriceRows(snapshot.priceRows)
+        setPositionRows(snapshot.positionRows)
       } catch (err) {
         if (!isActive) {
           return
         }
         setError(err instanceof Error ? err.message : "Unable to load data")
-        setAllocationRows([])
-        setLimitRows([])
+        setPriceRows([])
+        setPositionRows([])
       } finally {
         if (isActive) {
           setIsLoading(false)
@@ -102,7 +102,7 @@ export const useCommonSheetRequest = (
     return () => {
       isActive = false
     }
-  }, [asOf, scope, source, view, refreshIndex])
+  }, [asOfDate, fund, source, refreshIndex])
 
   useEffect(() => {
     if (!enableStream) {
@@ -118,18 +118,18 @@ export const useCommonSheetRequest = (
 
     setConnectionState("connecting")
 
-    const handleSnapshot = (snapshot: SheetSnapshot) => {
+    const handleSnapshot = (snapshot: BookSnapshot) => {
       const normalized = normalizeSnapshot(snapshot)
-      setAllocationRows(normalized.allocations)
-      setLimitRows(normalized.limits)
+      setPriceRows(normalized.priceRows)
+      setPositionRows(normalized.positionRows)
     }
 
-    const handleAllocationUpdate = (rows: AllocationRow[]) => {
-      setAllocationRows((current) => mergeRows(current, rows, "sleeve"))
+    const handlePriceUpdate = (rows: PriceRow[]) => {
+      setPriceRows((current) => mergeRows(current, rows, "symbol"))
     }
 
-    const handleLimitUpdate = (rows: LimitRow[]) => {
-      setLimitRows((current) => mergeRows(current, rows, "limit"))
+    const handlePositionUpdate = (rows: PositionRow[]) => {
+      setPositionRows((current) => mergeRows(current, rows, "symbol"))
     }
 
     socket.addEventListener("open", () => setConnectionState("open"))
@@ -157,21 +157,21 @@ export const useCommonSheetRequest = (
           handleSnapshot(message)
           return
         }
-        if (message.type === "allocation") {
-          handleAllocationUpdate([message.row])
+        if (message.type === "price") {
+          handlePriceUpdate([message.row])
           return
         }
-        if (message.type === "limit") {
-          handleLimitUpdate([message.row])
+        if (message.type === "position") {
+          handlePositionUpdate([message.row])
           return
         }
       }
 
-      if (message.allocations) {
-        handleAllocationUpdate(message.allocations)
+      if (message.prices) {
+        handlePriceUpdate(message.prices)
       }
-      if (message.limits) {
-        handleLimitUpdate(message.limits)
+      if (message.positions) {
+        handlePositionUpdate(message.positions)
       }
     })
 
@@ -182,13 +182,13 @@ export const useCommonSheetRequest = (
 
   return useMemo(
     () => ({
-      allocationRows,
-      limitRows,
+      priceRows,
+      positionRows,
       isLoading,
       error,
       connectionState,
       refresh,
     }),
-    [allocationRows, connectionState, error, isLoading, limitRows, refresh],
+    [priceRows, positionRows, connectionState, error, isLoading, refresh],
   )
 }

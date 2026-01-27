@@ -1,7 +1,7 @@
-import type { SheetSnapshot, SheetSnapshotParams } from "../api/common"
+import type { BookSnapshot, BookSnapshotParams } from "../api/common"
 
-export type CommonSheetSource = {
+export type BookSnapshotSource = {
   isMock: boolean
-  fetchSnapshot: (params?: SheetSnapshotParams) => Promise<SheetSnapshot>
+  fetchSnapshot: (params?: BookSnapshotParams) => Promise<BookSnapshot>
   openSocket: () => WebSocket | null
 }

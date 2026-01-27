@@ -1,15 +1,15 @@
 import * as React from "react"
-import { colorSchemeDark, themeQuartz } from "ag-grid-community"
+import { colorSchemeDark, themeBalham } from "ag-grid-community"
 
 import {
   THEME_CHANGE_EVENT,
   getDocumentTheme,
   isThemeMode,
+  type ThemeMode
 } from "~/lib/theme"
-import type { ThemeMode } from "~/lib/theme"
 
-const lightTheme = themeQuartz
-const darkTheme = themeQuartz.withPart(colorSchemeDark)
+const lightTheme = themeBalham
+const darkTheme = themeBalham.withPart(colorSchemeDark)
 
 export function useAgGridTheme() {
   const [mode, setMode] = React.useState<ThemeMode>(() => getDocumentTheme())

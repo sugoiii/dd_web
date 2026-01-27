@@ -1,67 +1,70 @@
+import { format } from "date-fns";
 import { createWebSocket, getApiBaseUrl } from "./client"
 
-export type AllocationRow = {
-  sleeve: string
-  target: string
-  actual: string
-  drift: string
+
+export type PriceRow = {
+  symbol: string
+  name: string
+  type: string
+  price: number
+  price_theo: number
+  dividend: number
 }
 
-export type LimitRow = {
-  limit: string
-  value: string
-  status: string
+export type PositionRow = {
+  symbol: string
+  name: string
+  type: string
+  quantity: number
+  price: number
+  amount: number
 }
 
-export type SheetSnapshot = {
-  allocations: AllocationRow[]
-  limits: LimitRow[]
+export type BookSnapshot = {
+  priceRows: PriceRow[]
+  positionRows: PositionRow[]
 }
 
-export type SheetSnapshotParams = {
-  view?: string
-  scope?: string
-  asOf?: string
+export type BookSnapshotParams = {
+  asOfDate?: Date
+  fund?: string
 }
 
 export type SheetConnectionState = "connecting" | "open" | "closed" | "mock"
 
-export type SheetStreamMessage =
+export type BookStreamMessage =
   | {
       type: "snapshot"
-      allocations: AllocationRow[]
-      limits: LimitRow[]
+      priceRows: PriceRow[]
+      positionRows: PositionRow[]
     }
   | {
-      type: "allocation"
-      row: AllocationRow
+      type: "price"
+      row: PriceRow
     }
   | {
-      type: "limit"
-      row: LimitRow
+      type: "position"
+      row: PositionRow
     }
   | {
-      allocations?: AllocationRow[]
-      limits?: LimitRow[]
+      prices?: PriceRow[]
+      positions?: PositionRow[]
     }
 
 export const fetchSheetSnapshot = async (
-  params: SheetSnapshotParams = {},
-): Promise<SheetSnapshot> => {
+  params: BookSnapshotParams = {},
+): Promise<BookSnapshot> => {
   const baseUrl = getApiBaseUrl()
   if (!baseUrl) {
     throw new Error("API base URL is not configured")
   }
 
   const url = new URL("/common/sheet-snapshot", baseUrl)
-  if (params.view) {
-    url.searchParams.set("view", params.view)
+  if (params.asOfDate) {
+    url.searchParams.set("as_of_date", format(params.asOfDate, "yyyy-MM-dd"));
   }
-  if (params.scope) {
-    url.searchParams.set("scope", params.scope)
-  }
-  if (params.asOf) {
-    url.searchParams.set("asOf", params.asOf)
+  if (params.fund) {
+    url.searchParams.set("fund", params.fund)
   }
 
   const response = await fetch(url.toString())
@@ -69,7 +72,7 @@ export const fetchSheetSnapshot = async (
     throw new Error("Failed to fetch sheet snapshot")
   }
 
-  return (await response.json()) as SheetSnapshot
+  return (await response.json()) as BookSnapshot
 }
 
 export const openSheetSocket = () => {

@@ -6,31 +6,17 @@ import { format, startOfDay } from "date-fns";
 
 import { PageTemplate } from "~/components/page-template";
 import { departmentPnls, holidaySeeds, usefulLinks } from "~/fixtures/common";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Calendar } from "~/components/ui/calendar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
 export function meta(): MetaDescriptor[] {
   return [
     { title: "Desk Dashboard" },
     {
       name: "description",
-      content:
-        "Landing hub with the global holiday calendar, intraday P&L, and quick access links.",
+      content: "Landing hub with the global holiday calendar, intraday P&L, and quick access links.",
     },
   ];
 }
@@ -40,9 +26,8 @@ type HolidaySeed = {
   day: number;
   label: string;
   region: string;
-  impact: "Closed" | "Partial";
+  impact: string;
 };
-
 
 function getUpcomingDate(month: number, day: number, reference: Date) {
   const candidate = new Date(reference.getFullYear(), month, day);
@@ -53,10 +38,12 @@ function getUpcomingDate(month: number, day: number, reference: Date) {
 }
 
 function getGlobalHolidays(reference: Date, seeds: HolidaySeed[]) {
-  return seeds.map((seed) => ({
-    ...seed,
-    date: getUpcomingDate(seed.month, seed.day, reference),
-  })).sort((a, b) => a.date.getTime() - b.date.getTime());
+  return seeds
+    .map((seed) => ({
+      ...seed,
+      date: getUpcomingDate(seed.month, seed.day, reference),
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
 function formatPnL(value: number) {
@@ -67,25 +54,17 @@ function formatPnL(value: number) {
 export default function DeskDashboardLanding() {
   const today = useMemo(() => startOfDay(new Date()), []);
   const holidays = useMemo(() => getGlobalHolidays(today, holidaySeeds), [today]);
-  const selectedHolidayDates = useMemo(
-    () => holidays.map((holiday) => holiday.date),
-    [holidays],
-  );
+  const selectedHolidayDates = useMemo(() => holidays.map((holiday) => holiday.date), [holidays]);
   const upcomingHolidays = useMemo(() => holidays.slice(0, 5), [holidays]);
 
   return (
-    <PageTemplate
-      title="Desk Dashboard"
-      description="Stay ahead of the trading day with the global holiday calendar, desk P&L flash, and shortcuts into the deeper dashboards."
-    >
+    <PageTemplate title="Desk Dashboard" description="Stay ahead of the trading day with the global holiday calendar, desk P&L flash, and shortcuts into the deeper dashboards.">
       <div className="grid gap-4 xl:grid-cols-[2fr,1fr]">
         <Card>
           <CardHeader className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Global Market Calendar</CardTitle>
-              <CardDescription>
-                Key exchange holidays and partial sessions to plan liquidity and staffing.
-              </CardDescription>
+              <CardDescription>Key exchange holidays and partial sessions to plan liquidity and staffing.</CardDescription>
             </div>
             <Badge variant="secondary" className="gap-1 text-xs">
               <CalendarDays className="size-3.5" aria-hidden />
@@ -107,22 +86,14 @@ export default function DeskDashboardLanding() {
               </div>
               <div className="space-y-3">
                 {upcomingHolidays.map((holiday) => (
-                  <div
-                    key={`${holiday.label}-${holiday.region}`}
-                    className="flex items-start justify-between rounded-lg border bg-muted/40 p-3"
-                  >
+                  <div key={`${holiday.label}-${holiday.region}`} className="flex items-start justify-between rounded-lg border bg-muted/40 p-3">
                     <div>
-                      <p className="font-medium leading-tight">
-                        {holiday.label}
-                      </p>
+                      <p className="font-medium leading-tight">{holiday.label}</p>
                       <p className="text-sm text-muted-foreground">
                         {holiday.region} • {format(holiday.date, "EEE, MMM d")}
                       </p>
                     </div>
-                    <Badge
-                      variant={holiday.impact === "Closed" ? "destructive" : "outline"}
-                      className="whitespace-nowrap"
-                    >
+                    <Badge variant={holiday.impact === "Closed" ? "destructive" : "outline"} className="whitespace-nowrap">
                       {holiday.impact === "Closed" ? "Closed" : "Partial"}
                     </Badge>
                   </div>
@@ -135,9 +106,7 @@ export default function DeskDashboardLanding() {
         <Card>
           <CardHeader>
             <CardTitle>Daily Department P&L</CardTitle>
-            <CardDescription>
-              Flash results versus plan to coordinate follow-ups with each lead.
-            </CardDescription>
+            <CardDescription>Flash results versus plan to coordinate follow-ups with each lead.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -157,15 +126,7 @@ export default function DeskDashboardLanding() {
                     <TableRow key={row.department}>
                       <TableCell className="font-medium">{row.department}</TableCell>
                       <TableCell className="text-right">
-                        <span
-                          className={
-                            row.pnl >= 0
-                              ? "text-emerald-500 dark:text-emerald-400"
-                              : "text-rose-500 dark:text-rose-400"
-                          }
-                        >
-                          {formatPnL(row.pnl)}
-                        </span>
+                        <span className={row.pnl >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"}>{formatPnL(row.pnl)}</span>
                       </TableCell>
                       <TableCell className="text-right">
                         <span
@@ -191,29 +152,19 @@ export default function DeskDashboardLanding() {
       <Card>
         <CardHeader>
           <CardTitle>Useful Links</CardTitle>
-          <CardDescription>
-            Jump directly into the dashboards most frequently referenced during the morning run-through.
-          </CardDescription>
+          <CardDescription>Jump directly into the dashboards most frequently referenced during the morning run-through.</CardDescription>
         </CardHeader>
         <CardContent>
           <ul className="grid gap-3 sm:grid-cols-2">
             {usefulLinks.map((link) => (
               <li key={link.href}>
-                <Link
-                  to={link.href}
-                  className="group flex h-full flex-col justify-between rounded-lg border bg-card p-4 transition hover:border-primary"
-                >
+                <Link to={link.href} className="group flex h-full flex-col justify-between rounded-lg border bg-card p-4 transition hover:border-primary">
                   <div>
                     <p className="font-medium flex items-center gap-2">
                       {link.title}
-                      <ArrowUpRight
-                        className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                        aria-hidden
-                      />
+                      <ArrowUpRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
                     </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {link.description}
-                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">{link.description}</p>
                   </div>
                 </Link>
               </li>
