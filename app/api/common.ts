@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { bookSnapshot } from "../fixtures/common"
 import { createWebSocket, getApiBaseUrl } from "./client"
 
 
@@ -51,9 +52,15 @@ export type BookStreamMessage =
       positions?: PositionRow[]
     }
 
+const mockFlag = import.meta.env.VITE_USE_MOCK_DATA
+export const isMockDataEnabled = mockFlag === "true" || mockFlag === "1"
+
 export const fetchSheetSnapshot = async (
   params: BookSnapshotParams = {},
 ): Promise<BookSnapshot> => {
+  if (isMockDataEnabled) {
+    return bookSnapshot
+  }
   const baseUrl = getApiBaseUrl()
   if (!baseUrl) {
     throw new Error("API base URL is not configured")
@@ -76,6 +83,9 @@ export const fetchSheetSnapshot = async (
 }
 
 export const openSheetSocket = () => {
+  if (isMockDataEnabled) {
+    return null
+  }
   const wsUrl = import.meta.env.VITE_COMMON_SHEET_WS_URL ?? ""
   if (!wsUrl) {
     return null
