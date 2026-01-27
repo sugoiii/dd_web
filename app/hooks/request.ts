@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import {
+  fetchSheetSnapshot,
+  isMockDataEnabled,
+  openSheetSocket,
   type PositionRow,
   type PriceRow,
   type SheetConnectionState,
@@ -8,7 +11,6 @@ import {
   type BookSnapshotParams,
   type BookStreamMessage,
 } from "../api/common"
-import { getBookSnapshotSource } from "../data/source-registry"
 
 export type BookSnapshotRequestState = {
   priceRows: PriceRow[]
@@ -54,7 +56,6 @@ export const useBookSnapshotRequest = (
   params: BookSnapshotParams & { enableStream?: boolean } = {},
 ): BookSnapshotRequestState => {
   const { enableStream = true, asOfDate, fund } = params
-  const source = useMemo(() => getBookSnapshotSource(), [])
   const [priceRows, setPriceRows] = useState<PriceRow[]>([])
   const [positionRows, setPositionRows] = useState<PositionRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -76,7 +77,7 @@ export const useBookSnapshotRequest = (
       setError(null)
       try {
         const snapshot = normalizeSnapshot(
-          await source.fetchSnapshot({ asOfDate, fund }),
+          await fetchSheetSnapshot({ asOfDate, fund }),
         )
         if (!isActive) {
           return
@@ -102,7 +103,7 @@ export const useBookSnapshotRequest = (
     return () => {
       isActive = false
     }
-  }, [asOfDate, fund, source, refreshIndex])
+  }, [asOfDate, fund, refreshIndex])
 
   useEffect(() => {
     if (!enableStream) {
@@ -110,9 +111,9 @@ export const useBookSnapshotRequest = (
       return
     }
 
-    const socket = source.openSocket()
+    const socket = openSheetSocket()
     if (!socket) {
-      setConnectionState(source.isMock ? "mock" : "closed")
+      setConnectionState(isMockDataEnabled ? "mock" : "closed")
       return
     }
 
@@ -178,7 +179,7 @@ export const useBookSnapshotRequest = (
     return () => {
       socket.close()
     }
-  }, [enableStream, source])
+  }, [enableStream])
 
   return useMemo(
     () => ({
