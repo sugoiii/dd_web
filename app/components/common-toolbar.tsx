@@ -1,8 +1,11 @@
+import { type ComponentProps, type ElementType } from "react";
 import { format, isValid } from "date-fns";
-import { CalendarDays, RefreshCw } from "lucide-react";
+import { CalendarDays } from "lucide-react";
+import { type DateRange } from "react-day-picker";
 
 import { Button } from "~/components/ui/button";
 import { Calendar } from "~/components/ui/calendar";
+import { Input } from "~/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import {
   Select,
@@ -13,102 +16,215 @@ import {
 } from "~/components/ui/select";
 import { cn } from "~/lib/utils";
 
-const VIEW_OPTIONS = [
-  { value: "overview", label: "Overview" },
-  { value: "stress", label: "Stress" },
-];
-
-const SCOPE_OPTIONS = [
-  { value: "core", label: "Core sleeves" },
-  { value: "extended", label: "Extended" },
-];
-
-export type CommonToolbarProps = {
-  selectedDate?: Date;
-  view: string;
-  scope: string;
-  isRefreshing?: boolean;
-  onDateChange: (date?: Date) => void;
-  onViewChange: (value: string) => void;
-  onScopeChange: (value: string) => void;
-  onRefresh: () => void;
+export type ToolbarSelectOption = {
+  value: string;
+  label: string;
 };
 
-export function CommonToolbar({
-  selectedDate,
-  view,
-  scope,
-  isRefreshing = false,
-  onDateChange,
-  onViewChange,
-  onScopeChange,
-  onRefresh,
-}: CommonToolbarProps) {
-  const displayDate = selectedDate && isValid(selectedDate)
-    ? format(selectedDate, "MMM d, yyyy")
-    : "Pick a date";
+type ToolbarBaseItem = {
+  id: string;
+};
+
+export type ToolbarDateItem = ToolbarBaseItem & {
+  type: "date";
+  value?: Date;
+  onChange: (date?: Date) => void;
+  placeholder?: string;
+  buttonClassName?: string;
+  icon?: ElementType;
+};
+
+export type ToolbarDateRangeItem = ToolbarBaseItem & {
+  type: "dateRange";
+  value?: DateRange;
+  onChange: (range?: DateRange) => void;
+  placeholder?: string;
+  buttonClassName?: string;
+  icon?: ElementType;
+};
+
+export type ToolbarTextItem = ToolbarBaseItem & {
+  type: "text";
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  inputClassName?: string;
+};
+
+export type ToolbarSelectItem = ToolbarBaseItem & {
+  type: "select";
+  value?: string;
+  onChange: (value: string) => void;
+  options: ToolbarSelectOption[];
+  placeholder?: string;
+  size?: "sm" | "default";
+  triggerClassName?: string;
+};
+
+export type ToolbarActionItem = ToolbarBaseItem & {
+  type: "action";
+  label: string;
+  onClick: () => void;
+  icon?: ElementType;
+  isLoading?: boolean;
+  disabled?: boolean;
+  variant?: ComponentProps<typeof Button>["variant"];
+  size?: ComponentProps<typeof Button>["size"];
+  className?: string;
+};
+
+export type ToolbarItem =
+  | ToolbarDateItem
+  | ToolbarDateRangeItem
+  | ToolbarTextItem
+  | ToolbarSelectItem
+  | ToolbarActionItem;
+
+export type CommonToolbarProps = {
+  items: ToolbarItem[];
+};
+
+const DEFAULT_DATE_PLACEHOLDER = "Pick a date";
+const DEFAULT_RANGE_PLACEHOLDER = "Pick a range";
+
+const getDateLabel = (date: Date | undefined, placeholder: string) =>
+  date && isValid(date) ? format(date, "MMM d, yyyy") : placeholder;
+
+const getDateRangeLabel = (range: DateRange | undefined, placeholder: string) => {
+  if (!range?.from || !isValid(range.from)) {
+    return placeholder;
+  }
+
+  const start = format(range.from, "MMM d, yyyy");
+  if (!range.to || !isValid(range.to)) {
+    return `${start} - ...`;
+  }
+
+  return `${start} - ${format(range.to, "MMM d, yyyy")}`;
+};
+
+export function CommonToolbar({ items }: CommonToolbarProps) {
+  const renderItem = (item: ToolbarItem) => {
+    switch (item.type) {
+      case "date": {
+        const DateIcon = item.icon ?? CalendarDays;
+        const displayDate = getDateLabel(item.value, item.placeholder ?? DEFAULT_DATE_PLACEHOLDER);
+        const hasDate = item.value && isValid(item.value);
+
+        return (
+          <Popover key={item.id}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "min-w-[164px] justify-start gap-2 text-left font-normal",
+                  !hasDate && "text-muted-foreground",
+                  item.buttonClassName,
+                )}
+              >
+                <DateIcon className="size-4" aria-hidden />
+                <span>{displayDate}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={item.value}
+                onSelect={item.onChange}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        );
+      }
+      case "dateRange": {
+        const DateIcon = item.icon ?? CalendarDays;
+        const displayRange = getDateRangeLabel(item.value, item.placeholder ?? DEFAULT_RANGE_PLACEHOLDER);
+        const hasRange = item.value?.from && isValid(item.value.from);
+
+        return (
+          <Popover key={item.id}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "min-w-[200px] justify-start gap-2 text-left font-normal",
+                  !hasRange && "text-muted-foreground",
+                  item.buttonClassName,
+                )}
+              >
+                <DateIcon className="size-4" aria-hidden />
+                <span>{displayRange}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={item.value}
+                onSelect={item.onChange}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        );
+      }
+      case "text":
+        return (
+          <Input
+            key={item.id}
+            value={item.value}
+            onChange={(event) => item.onChange(event.target.value)}
+            placeholder={item.placeholder}
+            className={item.inputClassName}
+          />
+        );
+      case "select":
+        return (
+          <Select key={item.id} value={item.value} onValueChange={item.onChange}>
+            <SelectTrigger size={item.size ?? "sm"} className={item.triggerClassName}>
+              <SelectValue placeholder={item.placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {item.options.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case "action": {
+        const ActionIcon = item.icon;
+        const isDisabled = item.disabled ?? item.isLoading;
+
+        return (
+          <Button
+            key={item.id}
+            type="button"
+            variant={item.variant ?? "secondary"}
+            size={item.size ?? "sm"}
+            onClick={item.onClick}
+            disabled={isDisabled}
+            className={item.className}
+          >
+            {ActionIcon ? (
+              <ActionIcon
+                className={cn("size-4", item.isLoading && "animate-spin")}
+                aria-hidden
+              />
+            ) : null}
+            {item.label}
+          </Button>
+        );
+      }
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "min-w-[164px] justify-start gap-2 text-left font-normal",
-              !selectedDate && "text-muted-foreground",
-            )}
-          >
-            <CalendarDays className="size-4" aria-hidden />
-            <span>{displayDate}</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={onDateChange}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-
-      <Select value={view} onValueChange={onViewChange}>
-        <SelectTrigger size="sm" className="min-w-[150px]">
-          <SelectValue placeholder="View" />
-        </SelectTrigger>
-        <SelectContent>
-          {VIEW_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={scope} onValueChange={onScopeChange}>
-        <SelectTrigger size="sm" className="min-w-[160px]">
-          <SelectValue placeholder="Scope" />
-        </SelectTrigger>
-        <SelectContent>
-          {SCOPE_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={onRefresh}
-        disabled={isRefreshing}
-      >
-        <RefreshCw className={cn("size-4", isRefreshing && "animate-spin")} aria-hidden />
-        Refresh
-      </Button>
+      {items.map(renderItem)}
     </div>
   );
 }
