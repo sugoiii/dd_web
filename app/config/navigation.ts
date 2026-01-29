@@ -33,4 +33,19 @@ export const navigationItems: NavItem[] = [
       },
     ],
   },
+  {
+    title: "Market Monitor",
+    key: "market-monitor",
+    icon: Activity,
+    description: "Streaming market microstructure, basis, and alert supervision.",
+    children: [
+      {
+        title: "Overview",
+        key: "market-monitor-overview",
+        path: "/market-monitor",
+        icon: Activity,
+        description: "Live market monitoring with basis, positions, and alert panels.",
+      },
+    ],
+  },
 ];
