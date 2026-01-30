@@ -18,6 +18,8 @@ const columnDefs: ColDef<DerivBasisRow>[] = [
   { field: "expiry", headerName: "Expiry", width: 100 },
 ];
 
+const getRowId = ({ data }: { data: DerivBasisRow }) => data.contract;
+
 export function DerivBasisPanel({ rows, gridTheme }: DerivBasisPanelProps) {
   return (
     <section className="space-y-2">
@@ -26,7 +28,14 @@ export function DerivBasisPanel({ rows, gridTheme }: DerivBasisPanelProps) {
         <p className="text-xs text-muted-foreground">Live basis and fair value comparison for listed futures.</p>
       </div>
       <div className="density-compact overflow-hidden rounded-md border">
-        <AgGridReact rowData={rows} columnDefs={columnDefs} domLayout="autoHeight" theme={gridTheme} />
+        <AgGridReact
+          rowData={rows}
+          columnDefs={columnDefs}
+          getRowId={getRowId}
+          immutableData
+          domLayout="autoHeight"
+          theme={gridTheme}
+        />
       </div>
     </section>
   );
