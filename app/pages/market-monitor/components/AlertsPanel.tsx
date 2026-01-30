@@ -17,6 +17,8 @@ const columnDefs: ColDef<AlertRow>[] = [
   { field: "status", headerName: "Status", width: 110 },
 ];
 
+const getRowId = ({ data }: { data: AlertRow }) => `${data.time}-${data.source}`;
+
 export function AlertsPanel({ rows, gridTheme }: AlertsPanelProps) {
   return (
     <section className="space-y-2">
@@ -25,7 +27,14 @@ export function AlertsPanel({ rows, gridTheme }: AlertsPanelProps) {
         <p className="text-xs text-muted-foreground">Streaming guardrails and operator triage queue.</p>
       </div>
       <div className="density-compact overflow-hidden rounded-md border">
-        <AgGridReact rowData={rows} columnDefs={columnDefs} domLayout="autoHeight" theme={gridTheme} />
+        <AgGridReact
+          rowData={rows}
+          columnDefs={columnDefs}
+          getRowId={getRowId}
+          immutableData
+          domLayout="autoHeight"
+          theme={gridTheme}
+        />
       </div>
     </section>
   );

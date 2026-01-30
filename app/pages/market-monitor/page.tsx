@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
-import { marketMonitorEmptySnapshot, marketMonitorSnapshot } from "~/fixtures/market-monitor";
 import { type ToolbarItem, CommonToolbar } from "~/components/common-toolbar";
 import { PageTemplate } from "~/components/page-template";
 import { Badge } from "~/components/ui/badge";
+import type { MarketMonitorFixtureMode } from "~/fixtures/market-monitor";
+import { useMarketMonitorStream } from "~/hooks/useMarketMonitorStream";
 import { useAgGridTheme } from "~/lib/ag-grid-theme";
 
 import { AlertsPanel } from "./components/AlertsPanel";
@@ -27,14 +28,19 @@ const DATA_OPTIONS = [
 
 export default function MarketMonitorPage() {
   const gridTheme = useAgGridTheme();
-  const refreshTimer = useRef<number | null>(null);
   const [venue, setVenue] = useState("all");
-  const [dataMode, setDataMode] = useState("standard");
-  const [isLoading, setIsLoading] = useState(false);
+  const [dataMode, setDataMode] = useState<MarketMonitorFixtureMode>("standard");
 
-  const snapshot = dataMode === "empty" ? marketMonitorEmptySnapshot : marketMonitorSnapshot;
-  const connectionState = dataMode === "outage" ? "closed" : "mock";
-  const error = dataMode === "outage" ? "Market data stream interrupted" : null;
+  const {
+    topOfBookRows,
+    derivBasisRows,
+    positionRows,
+    alertRows,
+    isLoading,
+    error,
+    connectionState,
+    refresh,
+  } = useMarketMonitorStream({ mode: dataMode });
 
   const connectionLabel =
     connectionState === "open"
@@ -46,22 +52,8 @@ export default function MarketMonitorPage() {
           : "Offline";
 
   const handleRefresh = () => {
-    if (refreshTimer.current) {
-      window.clearTimeout(refreshTimer.current);
-    }
-    setIsLoading(true);
-    refreshTimer.current = window.setTimeout(() => {
-      setIsLoading(false);
-    }, 700);
+    refresh();
   };
-
-  useEffect(() => {
-    return () => {
-      if (refreshTimer.current) {
-        window.clearTimeout(refreshTimer.current);
-      }
-    };
-  }, []);
 
   const toolbarItems = useMemo<ToolbarItem[]>(
     () => [
@@ -117,12 +109,12 @@ export default function MarketMonitorPage() {
     >
       <div className="grid gap-3 xl:grid-cols-12">
         <div className="xl:col-span-7">
-          <TopOfBookPanel rows={snapshot.topOfBookRows} gridTheme={gridTheme} />
+          <TopOfBookPanel rows={topOfBookRows} gridTheme={gridTheme} />
         </div>
         <div className="grid gap-3 xl:col-span-5">
-          <DerivBasisPanel rows={snapshot.derivBasisRows} gridTheme={gridTheme} />
-          <PositionsPanel rows={snapshot.positionRows} gridTheme={gridTheme} />
-          <AlertsPanel rows={snapshot.alertRows} gridTheme={gridTheme} />
+          <DerivBasisPanel rows={derivBasisRows} gridTheme={gridTheme} />
+          <PositionsPanel rows={positionRows} gridTheme={gridTheme} />
+          <AlertsPanel rows={alertRows} gridTheme={gridTheme} />
         </div>
       </div>
     </PageTemplate>

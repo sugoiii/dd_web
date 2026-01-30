@@ -26,6 +26,8 @@ const columnDefs: ColDef<PositionRow>[] = [
   { field: "limitUtilization", headerName: "Utilization", width: 110, valueFormatter: ({ value }) => percentFormatter(value) },
 ];
 
+const getRowId = ({ data }: { data: PositionRow }) => `${data.strategy}-${data.symbol}`;
+
 export function PositionsPanel({ rows, gridTheme }: PositionsPanelProps) {
   return (
     <section className="space-y-2">
@@ -34,7 +36,14 @@ export function PositionsPanel({ rows, gridTheme }: PositionsPanelProps) {
         <p className="text-xs text-muted-foreground">Net exposures and utilization against intraday limits.</p>
       </div>
       <div className="density-compact overflow-hidden rounded-md border">
-        <AgGridReact rowData={rows} columnDefs={columnDefs} domLayout="autoHeight" theme={gridTheme} />
+        <AgGridReact
+          rowData={rows}
+          columnDefs={columnDefs}
+          getRowId={getRowId}
+          immutableData
+          domLayout="autoHeight"
+          theme={gridTheme}
+        />
       </div>
     </section>
   );
